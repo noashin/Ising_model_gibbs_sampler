@@ -17,7 +17,7 @@ def multi_process_sampling(args):
     return sample_neurons(*args)
 
 
-def do_multiprocess(function, function_args, num_processes):
+def do_multiprocess(function_args, num_processes):
     """ processes the_args
         :param function:
         :param function_args:
@@ -25,9 +25,11 @@ def do_multiprocess(function, function_args, num_processes):
     """
     if num_processes > 1:
         pool = multiprocess.Pool(processes=num_processes)
-        results_list = pool.map(function, function_args)
+        results_list = pool.map(multi_process_sampling, function_args)
+        pool.close()
+        pool.join()
     else:
-        results_list = [function(*some_args) for some_args in function_args]
+        results_list = [sample_neurons(*some_args) for some_args in function_args]
     return results_list
 
 
@@ -64,7 +66,7 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=
     for input_indices in inputs:
         args_multi.append((samp_num, burnin, sigma_J, S, D[input_indices], sparsity, input_indices, thin))
 
-    results = do_multiprocess(sample_neurons, args_multi, num_processes)
+    results = do_multiprocess(args_multi, num_processes)
 
     i = 0
     for result in results:
@@ -106,10 +108,10 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
     N = 20
-    T = 3002
+    T = 1002
     ro = 0.2
     sigma_J = 1. / N
-    num_processes = 1
+    num_processes = 2
     samp_num = 3000
     burnin = 100
 
