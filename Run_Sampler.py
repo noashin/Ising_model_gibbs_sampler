@@ -1,5 +1,6 @@
 import numpy as np
 import multiprocessing as multiprocess
+import logging
 import click
 import pickle
 import time
@@ -8,8 +9,8 @@ from sampler import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
-def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, thin=0):
-    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin) for n in input_indices]
+def sample_neurons(samp_num, burnin, sigma_J, S, D, ro, input_indices, thin=0):
+    results = [sample_neuron(samp_num, burnin, sigma_J, S, D[n], ro, thin) for n in input_indices]
     return results
 
 
@@ -23,7 +24,9 @@ def do_multiprocess(function_args, num_processes):
         :param function_args:
         :param num_processes: how many pararell processes we want to run.
     """
-    if num_processes > 1:
+    if num_processes > 0:
+        mpl = multiprocess.log_to_stderr()
+        mpl.setLevel(logging.INFO)
         pool = multiprocess.Pool(processes=num_processes)
         results_list = pool.map(multi_process_sampling, function_args)
         pool.close()
@@ -63,8 +66,9 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=
     args_multi = []
     indices = range(N)
     inputs = [indices[i:i + N / num_processes] for i in range(0, len(indices), N / num_processes)]
+
     for input_indices in inputs:
-        args_multi.append((samp_num, burnin, sigma_J, S, D[input_indices], sparsity, input_indices, thin))
+        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, thin))
 
     results = do_multiprocess(args_multi, num_processes)
 
@@ -107,7 +111,7 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 20
+    N = 4
     T = 1002
     ro = 0.2
     sigma_J = 1. / N
