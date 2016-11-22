@@ -1,16 +1,21 @@
 import numpy as np
 import multiprocessing as multiprocess
-import logging
 import click
 import pickle
 import time
+import os
 
 from sampler import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
-def sample_neurons(samp_num, burnin, sigma_J, S, D, ro, input_indices, thin=0):
-    results = [sample_neuron(samp_num, burnin, sigma_J, S, D[n], ro, thin) for n in input_indices]
+def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0):
+    file_name = '_'.join(str(n) for n in input_indices)
+    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin) for n in input_indices]
+
+    with open(os.path.join(dir_name, file_name), 'wb') as f:
+        pickle.dump(results, f)
+
     return results
 
 
@@ -24,9 +29,7 @@ def do_multiprocess(function_args, num_processes):
         :param function_args:
         :param num_processes: how many pararell processes we want to run.
     """
-    if num_processes > 0:
-        mpl = multiprocess.log_to_stderr()
-        mpl.setLevel(logging.INFO)
+    if num_processes > 1:
         pool = multiprocess.Pool(processes=num_processes)
         results_list = pool.map(multi_process_sampling, function_args)
         pool.close()
@@ -53,35 +56,32 @@ def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
     return S, J
 
 
-def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=0):
+def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0):
     T = S.shape[0]
     N = S.shape[1]
     D = calculate_D(S[1:-1, :])
 
-    J_samps = np.empty((samp_num, N, N))
-    gamma_samps = np.empty((samp_num, N, N))
-    w_samps = np.empty((samp_num, T, N))
+    # J_samps = np.empty((samp_num, N, N))
+    # gamma_samps = np.empty((samp_num, N, N))
+    # w_samps = np.empty((samp_num, T, N))
 
     # prepare inputs for multi processing
     args_multi = []
     indices = range(N)
     inputs = [indices[i:i + N / num_processes] for i in range(0, len(indices), N / num_processes)]
-
     for input_indices in inputs:
-        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, thin))
+        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin))
 
     results = do_multiprocess(args_multi, num_processes)
 
-    i = 0
-    for result in results:
-        for neuron in result:
-            w_samps[:, :, i] = neuron[0]
-            J_samps[:, i, :] = neuron[1]
-            gamma_samps[:, i, :] = neuron[2]
+    # i = 0
+    # for result in results:
+    #    for neuron in result:
+    #        w_samps[:, :, i] = neuron[0]
+    #        J_samps[:, i, :] = neuron[1]
+    #        gamma_samps[:, i, :] = neuron[2]
 
-    with open(time.strftime("%Y%m%d-%H%M%S") + 'gibbs_samps.p', 'wb') as f:
-        pickle.dump([J, S, sparsity, J_samps, w_samps, gamma_samps], f)
-    return w_samps, J_samps, gamma_samps
+    return  # w_samps, J_samps, gamma_samps
 
 
 @click.command()
@@ -112,15 +112,24 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, thin=
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
     N = 4
-    T = 1002
+    T = 10
     ro = 0.2
     sigma_J = 1. / N
     num_processes = 2
-    samp_num = 3000
-    burnin = 100
+    samp_num = 10
+    burnin = 0
+
+    dir_name = './%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num)
+    print dir_name
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
 
     S, J = generate_J_S(0, N, T, ro, sigma_J)
-    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity)
+
+    with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
+        pickle.dump([J, S], f)
+
+    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name)
 
     '''
     # If not generate S and J
