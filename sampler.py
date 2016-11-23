@@ -203,8 +203,8 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     samples_J_i = np.zeros((N_s, N), dtype=np.float32)
     samples_gamma_i = np.zeros((N_s, N), dtype=np.float32)
 
-    J_i = np.random.normal(0, ro, N)
     gamma_i = np.random.binomial(1, ro, N)
+    J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N))
 
     for i in xrange(N_s):
         # import ipdb; ipdb.set_trace()
