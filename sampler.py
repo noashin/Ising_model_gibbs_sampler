@@ -4,17 +4,14 @@ import random
 import numpy as np
 import pypolyagamma as pypolyagamma
 
-TMP = 0.
-
 
 def calculate_D(S):
     N = S.shape[1]
-    T = S.shape[0]
 
     D = np.empty((N, N))
     for i in range(N):
         for j in range(N):
-            D[i, j] = np.dot(S[:, i].T, np.hstack([TMP, S[:, j]])[:-1])
+            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
 
     return D
 
@@ -69,8 +66,6 @@ def sample_J_i(S, C, D_i, w_i, gamma_i, sigma_J):
     cov = C_gamma + cov_mat_gamma
 
     J_i_gamma = np.random.multivariate_normal(mean, cov)
-
-
 
     J_i[included_ind] = J_i_gamma
 
@@ -145,7 +140,8 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     new_ro = prob_1 / (prob_1 + prob_0)
 
     if np.isnan(new_ro):
-        import ipdb; ipdb.set_trace()
+        import ipdb;
+        ipdb.set_trace()
 
     return new_ro
 
@@ -171,7 +167,8 @@ def sample_gamma_i(gamma_i, D_i, C, ro, sigmma_J):
         try:
             gamma_i[j] = np.random.binomial(1, new_ro, 1)
         except ValueError:
-            import ipdb; ipdb.set_trace()
+            import ipdb;
+            ipdb.set_trace()
 
     return gamma_i
 
@@ -217,6 +214,6 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         samples_gamma_i[i, :] = gamma_i
 
     return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
-    #else:
+    # else:
     #    return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :], \
     #           samples_gamma_i[burnin:N_s:thin, :]
