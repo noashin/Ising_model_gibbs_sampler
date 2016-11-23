@@ -9,6 +9,7 @@ def calculate_D(S):
     N = S.shape[1]
 
     D = np.empty((N, N))
+
     for i in range(N):
         for j in range(N):
             D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
@@ -18,9 +19,9 @@ def calculate_D(S):
 
 def calculate_C_w(S, w_i):
     N = S.shape[1]
-    T = S.shape[0]
 
     C_w = np.empty((N, N))
+
     for i in range(N):
         for j in range(N):
             C_w[i, j] = 4. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
@@ -124,18 +125,10 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
 
     gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
     gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
+
     # import ipdb; ipdb.set_trace()
     prob_0 = prefactor_0 * gauss_0 * (1. - ro)
     prob_1 = prefactor_1 * gauss_1 * ro
-
-    # TODO: How to handle infinity?
-    if np.isinf(gauss_0):
-        if np.isinf(gauss_1):
-            return 0.5
-        return 0.
-
-    if np.isinf(gauss_1):
-        return 1.
 
     new_ro = prob_1 / (prob_1 + prob_0)
 
@@ -164,11 +157,11 @@ def sample_gamma_i(gamma_i, D_i, C, ro, sigmma_J):
 
         new_ro = calc_gamma_prob(sigmma_J, C_gamma, D_i_gamma, ro, j_rel)
         # import ipdb; ipdb.set_trace()
-        try:
-            gamma_i[j] = np.random.binomial(1, new_ro, 1)
-        except ValueError:
-            import ipdb;
-            ipdb.set_trace()
+        #try:
+        gamma_i[j] = np.random.binomial(1, new_ro, 1)
+        #except ValueError:
+         #   import ipdb;
+         #   ipdb.set_trace()
 
     return gamma_i
 
@@ -206,8 +199,9 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
         gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
+        J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
+
 
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
