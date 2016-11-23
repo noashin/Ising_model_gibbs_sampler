@@ -26,7 +26,7 @@ def calculate_C_w(S, w_i):
     C_w = np.empty((N, N))
     for i in range(N):
         for j in range(N):
-            C_w[i, j] = 2. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
+            C_w[i, j] = np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
 
     return C_w
 
@@ -65,8 +65,8 @@ def sample_J_i(S, C, D_i, w_i, gamma_i, sigma_J):
     cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
     D_i_gamma = D_i[included_ind]
 
-    mean = np.dot(np.linalg.inv(C_gamma + cov_mat_gamma), D_i_gamma)
-    cov = C_gamma + cov_mat_gamma
+    mean = np.dot(np.linalg.inv(4. * C_gamma + cov_mat_gamma), D_i_gamma)
+    cov = 4. * C_gamma + cov_mat_gamma
 
     J_i_gamma = np.random.multivariate_normal(mean, cov)
 
@@ -190,8 +190,7 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
 
     # random.seed(seed)
 
-    T = S.shape[0]
-    N = S.shape[1]
+    T, N = S.shape
 
     # actual number of samples needed with thining and burin-in
     if (thin != 0):
