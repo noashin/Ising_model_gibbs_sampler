@@ -209,8 +209,8 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     for i in xrange(N_s):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
-        C_w_i = calculate_C_w(S[:-1], w_i[:-1])
-        J_i = sample_J_i(S[:-1, :], C_w_i, D_i, w_i[:-1], gamma_i, sigma_J)
+        C_w_i = calculate_C_w(S, w_i)
+        J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
         gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
 
         samples_w_i[i, :] = w_i
