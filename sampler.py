@@ -26,7 +26,7 @@ def calculate_C_w(S, w_i):
     C_w = np.empty((N, N))
     for i in range(N):
         for j in range(N):
-            C_w[i, j] = np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
+            C_w[i, j] = 4. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
 
     return C_w
 
@@ -65,8 +65,8 @@ def sample_J_i(S, C, D_i, w_i, gamma_i, sigma_J):
     cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
     D_i_gamma = D_i[included_ind]
 
-    mean = np.dot(np.linalg.inv(4. * C_gamma + cov_mat_gamma), D_i_gamma)
-    cov = 4. * C_gamma + cov_mat_gamma
+    mean = np.dot(np.linalg.inv(C_gamma + cov_mat_gamma), D_i_gamma)
+    cov = C_gamma + cov_mat_gamma
 
     J_i_gamma = np.random.multivariate_normal(mean, cov)
 
@@ -112,7 +112,7 @@ def calc_block_dets(C_gamma, j_rel, sigma_J, num_active):
         pre_factor_0 = 1. / (det_cov_0 * det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
         pre_factor_1 = 1. / (det_cov_1 * det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
 
-    return pre_factor_0, pre_factor_1
+    return np.sqrt(pre_factor_0), np.sqrt(pre_factor_1)
 
 
 def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
@@ -127,8 +127,8 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     D_i_gamma_0 = np.delete(D_i_gamma, j_rel)
     mat_0_inv = np.linalg.inv(np.delete(np.delete(mat, j_rel, 0), j_rel, 1))
 
-    gauss_0 = np.exp(np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
-    gauss_1 = np.exp(np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
+    gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
+    gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
     # import ipdb; ipdb.set_trace()
     prob_0 = prefactor_0 * gauss_0 * (1. - ro)
     prob_1 = prefactor_1 * gauss_1 * ro
