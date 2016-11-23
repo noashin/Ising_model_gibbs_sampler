@@ -24,10 +24,9 @@ def calculate_C_w(S, w_i):
     T = S.shape[0]
 
     C_w = np.empty((N, N))
-    w_i_shift = np.hstack([w_i[1:], TMP])
     for i in range(N):
         for j in range(N):
-            C_w[i, j] = 2. * np.dot(S[:, i].T, np.multiply(w_i_shift, S[:, j]))
+            C_w[i, j] = 2. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
 
     return C_w
 
