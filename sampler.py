@@ -192,20 +192,21 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     samples_J_i = np.zeros((N_s, N), dtype=np.float32)
     samples_gamma_i = np.zeros((N_s, N), dtype=np.float32)
 
-    gamma_i = np.random.binomial(1, ro, N)
+    #gamma_i = np.random.binomial(1, ro, N)
+    gamma_i = np.ones(N)
     J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N))
 
     for i in xrange(N_s):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
+        # gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
 
 
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-        samples_gamma_i[i, :] = gamma_i
+        #samples_gamma_i[i, :] = gamma_i
 
     return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
     # else:
