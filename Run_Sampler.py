@@ -59,7 +59,7 @@ def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
 def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0):
     T = S.shape[0]
     N = S.shape[1]
-    D = calculate_D(S[1:-1, :])
+    D = calculate_D(S)
 
     # J_samps = np.empty((samp_num, N, N))
     # gamma_samps = np.empty((samp_num, N, N))
@@ -111,11 +111,11 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 4
-    T = 10
-    ro = 0.2
+    N = 40
+    T = 1000
+    ro = 1.
     sigma_J = 1. / N
-    num_processes = 2
+    num_processes = 1
     samp_num = 10
     burnin = 0
 
