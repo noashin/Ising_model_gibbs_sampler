@@ -88,7 +88,7 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
 
-    if burnin == 0:
+    if thin == 0:
         samples_w_i[burnin:, :], samples_J_i[burnin:, :]
     else:
         return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :]
