@@ -45,7 +45,7 @@ def sample_J_i(S, C, D_i, w_i, sigma_J):
     cov_mat = (1. / sigma_J) * np.identity(N)
 
     mean = np.dot(C + cov_mat, D_i)
-    cov = np.inv(C + cov_mat)
+    cov = np.linalg.inv(C + cov_mat)
 
     J_i = np.random.multivariate_normal(mean, cov)
 
