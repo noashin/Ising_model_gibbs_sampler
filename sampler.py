@@ -187,7 +187,7 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         N_s = samp_num * thin + burnin
     else:
         N_s = samp_num + burnin
-    # import ipdb; ipdb.set_trace()
+
     samples_w_i = np.zeros((N_s, T), dtype=np.float32)
     samples_J_i = np.zeros((N_s, N), dtype=np.float32)
     samples_gamma_i = np.zeros((N_s, N), dtype=np.float32)
