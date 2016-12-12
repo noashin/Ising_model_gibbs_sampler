@@ -82,7 +82,7 @@ def sample_J_i(S, C, D_i, w_i, gamma_i, sigma_J):
     cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
     D_i_gamma = D_i[included_ind]
 
-    cov = np.linalg.onv(C_gamma + cov_mat_gamma)
+    cov = np.linalg.inv(C_gamma + cov_mat_gamma)
     mean = np.dot(cov, D_i_gamma)
 
     J_i_gamma = np.random.multivariate_normal(mean, cov)
