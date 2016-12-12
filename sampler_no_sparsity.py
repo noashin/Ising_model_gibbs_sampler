@@ -11,7 +11,7 @@ def calculate_D(S):
         for j in range(N):
             D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
 
-    return 0.5 * D
+    return D * 0.5
 
 
 def calculate_C_w(S, w_i):
@@ -43,9 +43,9 @@ def sample_J_i(S, C, D_i, w_i, sigma_J):
     N = S.shape[1]
 
     cov_mat = (1. / sigma_J) * np.identity(N)
-
-    mean = np.dot(C + cov_mat, D_i)
+    
     cov = np.linalg.inv(C + cov_mat)
+    mean = np.dot(cov, D_i)
 
     J_i = np.random.multivariate_normal(mean, cov)
 
@@ -84,11 +84,11 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, sigma_J)
-
+	# import ipdb; ipdb.set_trace()
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-
+    # import ipdb; ipdb.set_trace()
     if thin == 0:
-        samples_w_i[burnin:, :], samples_J_i[burnin:, :]
+        return samples_w_i[burnin:, :], samples_J_i[burnin:, :]
     else:
         return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :]
