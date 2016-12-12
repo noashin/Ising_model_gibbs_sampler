@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pypolyagamma as pypolyagamma
 
-
+'''
 def calculate_D(S):
     N = S.shape[1]
 
@@ -26,7 +26,25 @@ def calculate_C_w(S, w_i):
         for j in range(N):
             C_w[i, j] = 4. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
 
-    return C_w
+    return C_w'''
+
+
+def calculate_D(S):
+    N = S.shape[1]
+
+    D = np.empty((N, N))
+
+    for i in range(N):
+        for j in range(N):
+            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
+
+    return D * 0.5
+
+
+def calculate_C_w(S, w_i):
+    w_mat = np.diag(w_i)
+
+    return np.dot(S.T, np.dot(w_mat, S))
 
 
 def sample_w_i(S, J_i):
@@ -43,7 +61,8 @@ def sample_w_i(S, J_i):
     A = np.ones(T)
     w_i = np.zeros(T)
 
-    ppg.pgdrawv(A, 2. * np.dot(S, J_i), w_i)
+    # ppg.pgdrawv(A, 2. * np.dot(S, J_i), w_i)
+    ppg.pgdrawv(A, np.dot(S, J_i), w_i)
 
     return w_i
 
@@ -63,8 +82,8 @@ def sample_J_i(S, C, D_i, w_i, gamma_i, sigma_J):
     cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
     D_i_gamma = D_i[included_ind]
 
-    mean = np.dot(np.linalg.inv(C_gamma + cov_mat_gamma), D_i_gamma)
-    cov = C_gamma + cov_mat_gamma
+    cov = np.linalg.onv(C_gamma + cov_mat_gamma)
+    mean = np.dot(cov, D_i_gamma)
 
     J_i_gamma = np.random.multivariate_normal(mean, cov)
 
@@ -117,11 +136,13 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     mat = cov_mat + C_gamma
     mat_inv = np.linalg.inv(mat)
 
-    # calculate determinant with and without j in block form
-    prefactor_0, prefactor_1 = calc_block_dets(C_gamma, j_rel, sigma_J, num_active)
-
-    D_i_gamma_0 = np.delete(D_i_gamma, j_rel)
     mat_0_inv = np.linalg.inv(np.delete(np.delete(mat, j_rel, 0), j_rel, 1))
+    D_i_gamma_0 = np.delete(D_i_gamma, j_rel)
+
+    # calculate determinant with and without j in block form
+    # prefactor_0, prefactor_1 = calc_block_dets(C_gamma, j_rel, sigma_J, num_active)
+    prefactor_1 = np.sqrt(np.linalg.det(mat_inv) * np.linalg.det(cov_mat))
+    prefactor_0 = np.sqrt(np.linalg.det(mat_0_inv) * np.linalg.det(np.delete(np.delete(cov_mat, j_rel, 0), j_rel, 1)))
 
     gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
     gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
@@ -157,11 +178,11 @@ def sample_gamma_i(gamma_i, D_i, C, ro, sigmma_J):
 
         new_ro = calc_gamma_prob(sigmma_J, C_gamma, D_i_gamma, ro, j_rel)
         # import ipdb; ipdb.set_trace()
-        #try:
+        # try:
         gamma_i[j] = np.random.binomial(1, new_ro, 1)
-        #except ValueError:
-         #   import ipdb;
-         #   ipdb.set_trace()
+        # except ValueError:
+        #   import ipdb;
+        #   ipdb.set_trace()
 
     return gamma_i
 
@@ -192,7 +213,7 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     samples_J_i = np.zeros((N_s, N), dtype=np.float32)
     samples_gamma_i = np.zeros((N_s, N), dtype=np.float32)
 
-    #gamma_i = np.random.binomial(1, ro, N)
+    # gamma_i = np.random.binomial(1, ro, N)
     gamma_i = np.ones(N)
     J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N))
 
@@ -203,10 +224,9 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         # gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
 
-
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-        #samples_gamma_i[i, :] = gamma_i
+        # samples_gamma_i[i, :] = gamma_i
 
     return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
     # else:
