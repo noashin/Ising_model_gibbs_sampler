@@ -5,7 +5,7 @@ import pickle
 import time
 import os
 
-from sampler import sample_neuron, calculate_D
+from sampler_no_sparsity import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
@@ -111,13 +111,14 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 40
-    T = 1000
+    N = 10
+    T = 3000
     ro = 1.
-    sigma_J = 1. / N
-    num_processes = 1
-    samp_num = 10
-    burnin = 0
+    sigma_J = 1. #/ N
+    num_processes = 10
+    samp_num = 5000
+
+    burnin = 1000
 
     dir_name = './%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num)
     print dir_name
