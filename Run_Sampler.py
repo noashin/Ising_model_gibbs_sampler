@@ -5,7 +5,7 @@ import pickle
 import time
 import os
 
-from sampler_no_sparsity import sample_neuron, calculate_D
+from sampler import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
@@ -121,8 +121,8 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     burnin = 1000
     thin = 100
 
-    dir_name = './%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin)
-    
+    dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)
+
     print dir_name
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)

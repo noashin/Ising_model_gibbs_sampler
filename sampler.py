@@ -31,15 +31,16 @@ def sample_w_i(S, J_i):
     :return: samples for w_i from a polyagamma distribution
     """
 
-    ppg = pypolyagamma.PyPolyaGamma(np.random.randint(2 ** 16))
+    seeds = np.random.randint(2**16, size=4)
+    ppgs = [pypolyagamma.PyPolyaGamma(seed) for seed in seeds]
 
     T = S.shape[0]
     A = np.ones(T)
     w_i = np.zeros(T)
 
     # ppg.pgdrawv(A, 2. * np.dot(S, J_i), w_i)
-    ppg.pgdrawv(A, np.dot(S, J_i), w_i)
-
+    pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i), w_i)
+    
     return w_i
 
 
