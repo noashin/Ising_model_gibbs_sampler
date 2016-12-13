@@ -4,30 +4,6 @@ import random
 import numpy as np
 import pypolyagamma as pypolyagamma
 
-'''
-def calculate_D(S):
-    N = S.shape[1]
-
-    D = np.empty((N, N))
-
-    for i in range(N):
-        for j in range(N):
-            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
-
-    return D
-
-
-def calculate_C_w(S, w_i):
-    N = S.shape[1]
-
-    C_w = np.empty((N, N))
-
-    for i in range(N):
-        for j in range(N):
-            C_w[i, j] = 4. * np.dot(S[:, i].T, np.multiply(w_i, S[:, j]))
-
-    return C_w'''
-
 
 def calculate_D(S):
     N = S.shape[1]
@@ -112,20 +88,20 @@ def calc_block_dets(C_gamma, j_rel, sigma_J, num_active):
     # import ipdb;ipdb.set_trace()
     # If the matrix is small don't bother to split
     if mat.shape[0] < 5.:
-        pre_factor_1 = 1. / (det_cov_1 * np.linalg.det(mat))
-        pre_factor_0 = 1. / (det_cov_0 * np.linalg.det(np.delete(np.delete(mat, j_rel, 0), j_rel, 1)))
+        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
+        pre_factor_0 = (det_cov_0 / np.linalg.det(np.delete(np.delete(mat, j_rel, 0), j_rel, 1)))
 
     elif j_rel == 0:
-        pre_factor_0 = 1. / (det_cov_0 * np.linalg.det(D_0))
-        pre_factor_1 = 1. / (det_cov_1 * np.linalg.det(mat))
+        pre_factor_0 = (det_cov_0 / np.linalg.det(D_0))
+        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
     elif j_rel == num_active - 1:
-        pre_factor_0 = 1. / (det_cov_0 * np.linalg.det(A))
-        pre_factor_1 = 1. / (det_cov_1 * np.linalg.det(mat))
+        pre_factor_0 = (det_cov_0 / np.linalg.det(A))
+        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
     else:
         det_A = np.linalg.det(A)
         A_inv = np.linalg.inv(A)
-        pre_factor_0 = 1. / (det_cov_0 * det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
-        pre_factor_1 = 1. / (det_cov_1 * det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
+        pre_factor_0 = det_cov_0 / (det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
+        pre_factor_1 = det_cov_1 / (det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
 
     return np.sqrt(pre_factor_0), np.sqrt(pre_factor_1)
 
@@ -140,9 +116,9 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     D_i_gamma_0 = np.delete(D_i_gamma, j_rel)
 
     # calculate determinant with and without j in block form
-    # prefactor_0, prefactor_1 = calc_block_dets(C_gamma, j_rel, sigma_J, num_active)
-    prefactor_1 = np.sqrt(np.linalg.det(mat_inv) * np.linalg.det(cov_mat))
-    prefactor_0 = np.sqrt(np.linalg.det(mat_0_inv) * np.linalg.det(np.delete(np.delete(cov_mat, j_rel, 0), j_rel, 1)))
+    prefactor_0, prefactor_1 = calc_block_dets(C_gamma, j_rel, sigma_J, num_active)
+    # prefactor_1 = np.sqrt(np.linalg.det(mat_inv) * np.linalg.det(cov_mat))
+    # prefactor_0 = np.sqrt(np.linalg.det(mat_0_inv) * np.linalg.det(np.delete(np.delete(cov_mat, j_rel, 0), j_rel, 1)))
 
     gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
     gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
