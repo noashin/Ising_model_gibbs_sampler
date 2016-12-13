@@ -204,7 +204,8 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         samples_J_i[i, :] = J_i
         # samples_gamma_i[i, :] = gamma_i
 
-    return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
-    # else:
-    #    return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :], \
-    #           samples_gamma_i[burnin:N_s:thin, :]
+    if thin == 0:
+        return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
+    else:
+        return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :], \
+            samples_gamma_i[burnin:N_s:thin, :]

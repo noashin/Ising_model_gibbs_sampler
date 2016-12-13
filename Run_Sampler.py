@@ -119,8 +119,10 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     samp_num = 5000
 
     burnin = 1000
+    thin = 100
 
-    dir_name = './%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num)
+    dir_name = './%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin)
+    
     print dir_name
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
