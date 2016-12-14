@@ -113,12 +113,12 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
          activity_mat_file, bias, num_trials):
     N = 10
     T = 3000
-    ro = 1.
-    sigma_J = 1. #/ N
+    ro = 0.5
+    sigma_J = 1. / N
     num_processes = 10
-    samp_num = 5000
+    samp_num = 8000
 
-    burnin = 1000
+    burnin = 3000
     thin = 100
 
     dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)

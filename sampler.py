@@ -30,17 +30,18 @@ def sample_w_i(S, J_i):
     :param J_i: neuron i's couplings
     :return: samples for w_i from a polyagamma distribution
     """
-
-    seeds = np.random.randint(2**16, size=4)
+    nthreads = pypolyagamma.get_omp_num_threads()
+    seeds = np.random.randint(2**16, size=nthreads)
     ppgs = [pypolyagamma.PyPolyaGamma(seed) for seed in seeds]
 
     T = S.shape[0]
     A = np.ones(T)
     w_i = np.zeros(T)
-
+    # print 'will sample w'
+    # print nthreads
     # ppg.pgdrawv(A, 2. * np.dot(S, J_i), w_i)
     pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i), w_i)
-    
+    # print 'sampled w'
     return w_i
 
 
@@ -108,6 +109,7 @@ def calc_block_dets(C_gamma, j_rel, sigma_J, num_active):
 
 
 def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
+    # import ipdb; ipdb.set_trace()
     num_active = D_i_gamma.shape[0]  # How manny gammas are equal to 1
     cov_mat = 1. / sigma_J * np.identity(num_active)
     mat = cov_mat + C_gamma
@@ -121,12 +123,29 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     # prefactor_1 = np.sqrt(np.linalg.det(mat_inv) * np.linalg.det(cov_mat))
     # prefactor_0 = np.sqrt(np.linalg.det(mat_0_inv) * np.linalg.det(np.delete(np.delete(cov_mat, j_rel, 0), j_rel, 1)))
 
-    gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
-    gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
+    sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
+    sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
+
+    pg_1 = np.exp(sq_1 + np.log(prefactor_1))
+    pg_0 = np.exp(sq_0 + np.log(prefactor_0))
+
+    
+    if np.isinf(pg_1) and np.isinf(pg_0):
+        sq = min(sq_1, sq_0)
+        pg_1 = np.exp(sq_1 + np.log(prefactor_1) - sq)
+        pg_0 = np.exp(sq_0 + np.log(prefactor_0) - sq)
+
+    if np.isinf(pg_0) and ~np.isinf(pg_1):
+        return 0
+    elif np.isinf(pg_1) and ~np.isinf(pg_0):
+        return 1
+
+    # gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
+    # gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
 
     # import ipdb; ipdb.set_trace()
-    prob_0 = prefactor_0 * gauss_0 * (1. - ro)
-    prob_1 = prefactor_1 * gauss_1 * ro
+    prob_0 = pg_0 * (1. - ro)
+    prob_1 = pg_1 * ro
 
     new_ro = prob_1 / (prob_1 + prob_0)
 
@@ -198,12 +217,12 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        # gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
+        gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
 
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-        # samples_gamma_i[i, :] = gamma_i
+        samples_gamma_i[i, :] = gamma_i
 
     if thin == 0:
         return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
