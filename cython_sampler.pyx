@@ -10,7 +10,7 @@ ctypedef double DTYPE_d
 def calculate_D(np.ndarray[DTYPE_t, ndim=2] S):
     cdef int N
     cdef np.ndarray[DTYPE_t, ndim=2] D
-    
+
     N = S.shape[1]
 
     D = np.zeros((N, N), dtype=DTYPE)
@@ -22,10 +22,10 @@ def calculate_D(np.ndarray[DTYPE_t, ndim=2] S):
     return D * 0.5
 
 
-cdef np.ndarray[DTYPE_t, ndim=2] calculate_C_w(np.ndarray[DTYPE_t, ndim=2] S, 
+cdef np.ndarray[DTYPE_t, ndim=2] calculate_C_w(np.ndarray[DTYPE_t, ndim=2] S,
                         np.ndarray[DTYPE_t, ndim=1] w_i):
     cdef np.ndarray[DTYPE_t, ndim=2] w_mat
-    
+
     w_mat = np.diag(w_i)
 
     return np.dot(S.T, np.dot(w_mat, S))
@@ -39,7 +39,7 @@ cdef np.ndarray[DTYPE_t, ndim=2] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S,
     :param J_i: neuron i's couplings
     :return: samples for w_i from a polyagamma distribution
     """
-    
+
     cdef int T = S.shape[0]
     cdef np.ndarray[DTYPE_d, ndim=1] A = np.ones(T)
     cdef np.ndarray[DTYPE_d, ndim=1] w_i = np.zeros(T)
@@ -53,13 +53,13 @@ cdef np.ndarray[DTYPE_t, ndim=2] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S,
     return w_i.astype(np.float32)
 
 
-cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S, 
-                np.ndarray[DTYPE_t, ndim=2] C, 
-                np.ndarray[DTYPE_t, ndim=1] D_i, 
-                np.ndarray[DTYPE_t, ndim=1] w_i, 
-                np.ndarray[DTYPE_t, ndim=1] gamma_i, 
+cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
+                np.ndarray[DTYPE_t, ndim=2] C,
+                np.ndarray[DTYPE_t, ndim=1] D_i,
+                np.ndarray[DTYPE_t, ndim=1] w_i,
+                np.ndarray[DTYPE_t, ndim=1] gamma_i,
                 float sigma_J):
-    
+
     cdef int N = S.shape[1]
     cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.zeros(N, dtype=DTYPE)
 
@@ -84,11 +84,11 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
     return J_i
 
 
-cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_gamma, 
-                    int j_rel, 
-                    float sigma_J, 
+cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_gamma,
+                    int j_rel,
+                    float sigma_J,
                     int num_active):
-    
+
     cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=np.float32)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
 
@@ -119,51 +119,51 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
     elif j_rel == 0:
         pre_factor_0 = (det_cov_0 / np.linalg.det(D_0))
         pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
-    
+
     elif j_rel == num_active - 1:
         pre_factor_0 = (det_cov_0 / np.linalg.det(A))
         pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
-    
+
     else:
         det_A = np.linalg.det(A)
-        A_inv = np.linalg.inv(A)
+        A_inv = np.linalg.inv(A).astype(np.float32)
         pre_factor_0 = det_cov_0 / (det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
         pre_factor_1 = det_cov_1 / (det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
 
-    cdef np.ndarray[DTYPE_t, ndim=1] res = np.array([np.sqrt(pre_factor_0), np.sqrt(pre_factor_1)])
+    cdef np.ndarray[DTYPE_t, ndim=1] res = np.array([np.sqrt(pre_factor_0), np.sqrt(pre_factor_1)]).astype(DTYPE)
+
     return res
 
 
-cdef float calc_gamma_prob(float sigma_J, 
-                    np.ndarray[DTYPE_t, ndim=2] C_gamma, 
-                    np.ndarray[DTYPE_t, ndim=1] D_i_gamma, 
+cdef float calc_gamma_prob(float sigma_J,
+                    np.ndarray[DTYPE_t, ndim=2] C_gamma,
+                    np.ndarray[DTYPE_t, ndim=1] D_i_gamma,
                     float ro, int j_rel):
 
     cdef int num_active = D_i_gamma.shape[0]  # How manny gammas are equal to 1
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = 1. / sigma_J * np.identity(num_active, dtype=np.float32)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = 1. / sigma_J * np.identity(num_active, dtype=DTYPE)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
-    cdef np.ndarray[DTYPE_t, ndim=2] mat_inv = np.linalg.inv(mat)
-
-    cdef np.ndarray[DTYPE_t, ndim=2] mat_0_inv = np.linalg.inv(np.delete(np.delete(mat, j_rel, 0), j_rel, 1))
+    cdef np.ndarray[DTYPE_t, ndim=2] mat_inv = np.linalg.inv(mat).astype(DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=2] mat_0_inv = np.linalg.inv(np.delete(np.delete(
+                                                                mat, j_rel, 0), j_rel, 1)).astype(DTYPE)
     cdef np.ndarray[DTYPE_t, ndim=1] D_i_gamma_0 = np.delete(D_i_gamma, j_rel)
 
     # calculate determinant with and without j in block form
-    
     cdef float prefactor_0
     cdef float prefactor_1
-    cdef np.ndarray[DTYPE_t, ndim=1] res = calc_block_dets(C_gamma, j_rel, sigma_J, num_active)
-    
+
+    cdef np.ndarray[DTYPE_t, ndim=1] res = calc_block_dets(C_gamma, j_rel, sigma_J, num_active).astype(DTYPE)
+
     prefactor_0 = res[0]
     prefactor_1 = res[1]
-    
+
+
     cdef float sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
     cdef float sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
-
     cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
     cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
 
     cdef float sq
-    
     if np.isinf(pg_1) and np.isinf(pg_0):
         sq = min(sq_1, sq_0)
         pg_1 = np.exp(sq_1 + np.log(prefactor_1) - sq)
@@ -182,11 +182,11 @@ cdef float calc_gamma_prob(float sigma_J,
     return new_ro
 
 
-cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamma_i, 
-                    np.ndarray[DTYPE_t, ndim=1] D_i, 
-                    np.ndarray[DTYPE_t, ndim=2] C, 
+cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamma_i,
+                    np.ndarray[DTYPE_t, ndim=1] D_i,
+                    np.ndarray[DTYPE_t, ndim=2] C,
                     float ro, float sigmma_J):
-    
+
     cdef int N = C.shape[0]
     cdef np.ndarray[int, ndim=1] active_indices
     cdef int j_rel
@@ -212,9 +212,9 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamm
     return gamma_i
 
 
-def sample_neuron(int samp_num, int burnin, float sigma_J, 
-                    np.ndarray[DTYPE_t, ndim=2] S, 
-                    np.ndarray[DTYPE_t, ndim=1] D_i, 
+def sample_neuron(int samp_num, int burnin, float sigma_J,
+                    np.ndarray[DTYPE_t, ndim=2] S,
+                    np.ndarray[DTYPE_t, ndim=1] D_i,
                     float ro, int thin=0):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
@@ -229,10 +229,10 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
 
     # random.seed(seed)
 
-    cdef int T = S.shape[0] 
+    cdef int T = S.shape[0]
     cdef int N = S.shape[1]
 
-    cdef int N_s 
+    cdef int N_s
 
     # actual number of samples needed with thining and burin-in
     if (thin != 0):
@@ -245,7 +245,7 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
     cdef np.ndarray[DTYPE_t, ndim=2] samples_gamma_i = np.zeros((N_s, N), dtype=DTYPE)
 
     cdef np.ndarray[DTYPE_t, ndim=1] gamma_i = np.ones(N, dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N).astype(np.float32))
+    cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N).astype(DTYPE))
 
     cdef np.ndarray[DTYPE_t, ndim=1] w_i
     cdef np.ndarray[DTYPE_t, ndim=2] C_w_i
