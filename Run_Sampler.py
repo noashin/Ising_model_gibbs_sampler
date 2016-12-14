@@ -1,3 +1,7 @@
+# import pyximport
+# pyximport.install()
+
+
 import numpy as np
 import multiprocessing as multiprocess
 import click
@@ -5,7 +9,7 @@ import pickle
 import time
 import os
 
-from sampler import sample_neuron, calculate_D
+from cython_sampler import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
@@ -112,14 +116,14 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
     N = 10
-    T = 3000
+    T = 1000
     ro = 0.5
     sigma_J = 1. / N
-    num_processes = 10
-    samp_num = 8000
+    num_processes = 1
+    samp_num = 1000
 
-    burnin = 3000
-    thin = 100
+    burnin = 300
+    thin = 0
 
     dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)
 

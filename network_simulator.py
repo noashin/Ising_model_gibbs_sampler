@@ -60,12 +60,12 @@ def generate_spikes(N, T, S0, J, bias=0, no_spike=-1, save=False):
     # Initialize array for data
     S = np.empty([T, N + bias])
     # Set initial spike pattern
-    S[0] = S0 if no_spike == -1 else np.zeros(N + bias)
+    S[0] = S0 if no_spike == -1 else np.zeros(N + bias, dtype=np.float32)
     # Last column in the activity matrix is of the bias and should be 1 at all times
     if bias:
         S[:, N] = 1
     # Generate random numbers
-    X = np.random.rand(T - 1, N)
+    X = np.random.rand(T - 1, N).astype(np.float32)
 
     # Iterate through all time points
     for i in range(1, T):
@@ -76,5 +76,5 @@ def generate_spikes(N, T, S0, J, bias=0, no_spike=-1, save=False):
             S[i, :N] = 2 * (X[i - 1] < p) - 1
         else:
             S[i, :N] = 2 * (X[i - 1] < p) / 2.0
-
+    S = S.astype(np.float32)
     return S

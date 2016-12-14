@@ -4,9 +4,10 @@ import pypolyagamma as pypolyagamma
 
 DTYPE = np.float32
 ctypedef float DTYPE_t
+ctypedef double DTYPE_d
 
 
-cdef np.ndarray[DTYPE_t, ndim=2] calculate_D(np.ndarray[DTYPE_t, ndim=2] S):
+def calculate_D(np.ndarray[DTYPE_t, ndim=2] S):
     cdef int N
     cdef np.ndarray[DTYPE_t, ndim=2] D
     
@@ -30,7 +31,7 @@ cdef np.ndarray[DTYPE_t, ndim=2] calculate_C_w(np.ndarray[DTYPE_t, ndim=2] S,
     return np.dot(S.T, np.dot(w_mat, S))
 
 
-cdef np.ndarray[DTYPE_t, ndim=1] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S, 
+cdef np.ndarray[DTYPE_t, ndim=2] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S,
                 np.ndarray[DTYPE_t, ndim=1] J_i):
     """
 
@@ -40,16 +41,16 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S,
     """
     
     cdef int T = S.shape[0]
-    cdef np.ndarray[DTYPE_t, ndim=1] A = np.ones(T)
-    cdef np.ndarray[DTYPE_t, ndim=1] w_i = np.zeros(T)
+    cdef np.ndarray[DTYPE_d, ndim=1] A = np.ones(T)
+    cdef np.ndarray[DTYPE_d, ndim=1] w_i = np.zeros(T)
 
     cdef int nthreads = pypolyagamma.get_omp_num_threads()
-    cdef np.ndarray[DTYPE_t, ndim=1] seeds = np.random.randint(2**16, size=nthreads).astype(DTYPE)
+    cdef np.ndarray[DTYPE_d, ndim=1] seeds = np.random.randint(2**16, size=nthreads).astype(np.float64)
     ppgs = [pypolyagamma.PyPolyaGamma(seed) for seed in seeds]
 
-    pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i), w_i)
+    pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i).astype(np.float64), w_i)
 
-    return w_i
+    return w_i.astype(np.float32)
 
 
 cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S, 
@@ -62,12 +63,12 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
     cdef int N = S.shape[1]
     cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.zeros(N, dtype=DTYPE)
 
-    cdef np.ndarray[DTYPE_t, ndim=1] included_ind = np.where(gamma_i > 0)[0]
+    cdef np.ndarray[int, ndim=1] included_ind = np.where(gamma_i > 0)[0].astype(np.int32)
 
     if included_ind.shape[0] == 0:
         return J_i
 
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(N)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(N, dtype=np.float32)
 
     cdef np.ndarray[DTYPE_t, ndim=2] C_gamma = C[:, included_ind][included_ind, :]
     cdef np.ndarray[DTYPE_t, ndim=2] cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
@@ -76,7 +77,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
     cdef np.ndarray[DTYPE_t, ndim=2] cov = np.linalg.inv(C_gamma + cov_mat_gamma)
     cdef np.ndarray[DTYPE_t, ndim=1] mean = np.dot(cov, D_i_gamma)
 
-    cdef np.ndarray[DTYPE_t, ndim=1] J_i_gamma = np.random.multivariate_normal(mean, cov)
+    cdef np.ndarray[DTYPE_t, ndim=1] J_i_gamma = np.random.multivariate_normal(mean, cov).astype(np.float32)
 
     J_i[included_ind] = J_i_gamma
 
@@ -88,7 +89,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
                     float sigma_J, 
                     int num_active):
     
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=np.float32)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
 
     cdef np.ndarray[DTYPE_t, ndim=2] A = mat[:j_rel, :j_rel]
@@ -139,7 +140,7 @@ cdef float calc_gamma_prob(float sigma_J,
                     float ro, int j_rel):
 
     cdef int num_active = D_i_gamma.shape[0]  # How manny gammas are equal to 1
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = 1. / sigma_J * np.identity(num_active)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = 1. / sigma_J * np.identity(num_active, dtype=np.float32)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
     cdef np.ndarray[DTYPE_t, ndim=2] mat_inv = np.linalg.inv(mat)
 
@@ -187,7 +188,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamm
                     float ro, float sigmma_J):
     
     cdef int N = C.shape[0]
-    cdef int active_indices
+    cdef np.ndarray[int, ndim=1] active_indices
     cdef int j_rel
     cdef np.ndarray[DTYPE_t, ndim=1] D_i_gamma
     cdef np.ndarray[DTYPE_t, ndim=2] C_gamma
@@ -195,7 +196,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamm
 
     for j in range(N):
         gamma_i[j] = 1.
-        active_indices = np.where(gamma_i > 0)[0]
+        active_indices = np.where(gamma_i > 0)[0].astype(np.int32)
 
         # Don't allow a network with 0 connections
         if len(active_indices) == 1.:
@@ -244,7 +245,7 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
     cdef np.ndarray[DTYPE_t, ndim=2] samples_gamma_i = np.zeros((N_s, N), dtype=DTYPE)
 
     cdef np.ndarray[DTYPE_t, ndim=1] gamma_i = np.ones(N, dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N))
+    cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N).astype(np.float32))
 
     cdef np.ndarray[DTYPE_t, ndim=1] w_i
     cdef np.ndarray[DTYPE_t, ndim=2] C_w_i
