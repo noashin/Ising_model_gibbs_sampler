@@ -212,10 +212,11 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamm
     return gamma_i
 
 
-def sample_neuron(int samp_num, int burnin, float sigma_J,
+cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, float sigma_J,
                     np.ndarray[DTYPE_t, ndim=2] S,
                     np.ndarray[DTYPE_t, ndim=1] D_i,
-                    float ro, int thin=0):
+                    float ro, int thin=0,
+                    bint save_all=True):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
@@ -250,6 +251,8 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
     cdef np.ndarray[DTYPE_t, ndim=1] w_i
     cdef np.ndarray[DTYPE_t, ndim=2] C_w_i
 
+    cdef np.ndarray[DTYPE_t, ndim=3] res = np.empty((3, N_s, T), dtype=DTYPE)
+
     for i in xrange(N_s):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
@@ -261,8 +264,25 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
         samples_J_i[i, :] = J_i
         # samples_gamma_i[i, :] = gamma_i
 
+    res[0, :, :] = w_i
+    res[1, :, :N] = J_i
+    res[2, :, :N] = gamma_i
+
     if thin == 0:
-        return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
+        return res[:, burnin:, :]
     else:
-        return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :], \
-            samples_gamma_i[burnin:N_s:thin, :]
+        return res[:, burnin:N_s:thin, :]
+
+
+def sample_neuron(int samp_num, int burnin, float sigma_J,
+                    np.ndarray[DTYPE_t, ndim=2] S,
+                    np.ndarray[DTYPE_t, ndim=1] D_i,
+                    float ro, int thin=0,
+                    bint save_all=True):
+
+    cdef int N = S.shape[1]
+    cdef np.ndarray[DTYPE_t, ndim=3] res = sample_neuron_cython(samp_num, burnin, sigma_J, S, D_i, ro, thin, save_all)
+
+    return res[0, :,:], res[1, :, :N], res[2, :, :N]
+
+

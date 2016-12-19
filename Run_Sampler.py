@@ -13,9 +13,9 @@ from cython_sampler import sample_neuron, calculate_D
 from network_simulator import spike_and_slab, generate_spikes
 
 
-def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0):
+def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0, save_all=True):
     file_name = '_'.join(str(n) for n in input_indices)
-    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin) for n in input_indices]
+    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin, save_all) for n in input_indices]
 
     with open(os.path.join(dir_name, file_name), 'wb') as f:
         pickle.dump(results, f)
@@ -60,7 +60,7 @@ def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
     return S, J
 
 
-def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0):
+def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all= True):
     T = S.shape[0]
     N = S.shape[1]
     D = calculate_D(S)
@@ -74,7 +74,7 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
     indices = range(N)
     inputs = [indices[i:i + N / num_processes] for i in range(0, len(indices), N / num_processes)]
     for input_indices in inputs:
-        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin))
+        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin, save_all))
 
     results = do_multiprocess(args_multi, num_processes)
 
@@ -115,15 +115,17 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 10
-    T = 1000
+    N = 5
+    T = 100
     ro = 0.5
     sigma_J = 1. / N
     num_processes = 1
-    samp_num = 1000
+    samp_num = 100
 
-    burnin = 300
+    burnin = 20
     thin = 0
+
+    save_all = True
 
     dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)
 
@@ -136,7 +138,7 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
         pickle.dump([J, S], f)
 
-    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name)
+    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, save_all)
 
     '''
     # If not generate S and J
