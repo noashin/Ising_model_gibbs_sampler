@@ -138,7 +138,7 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
         pickle.dump([J, S], f)
 
-    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, save_all)
+    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin, save_all)
 
     '''
     # If not generate S and J

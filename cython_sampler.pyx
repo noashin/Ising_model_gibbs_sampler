@@ -91,6 +91,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
 
     cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=np.float32)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
+    mat = mat / np.max(mat)
 
     cdef np.ndarray[DTYPE_t, ndim=2] A = mat[:j_rel, :j_rel]
 
@@ -158,9 +159,12 @@ cdef float calc_gamma_prob(float sigma_J,
     prefactor_1 = res[1]
 
 
-    cdef float sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
-    cdef float sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
-    cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
+    cdef double sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
+    cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
+
+    cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
+                               np.log(prefactor_1) - np.log(prefactor_0)))
+    '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
     cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
 
     cdef float sq
@@ -177,7 +181,7 @@ cdef float calc_gamma_prob(float sigma_J,
     cdef float prob_0 = pg_0 * (1. - ro)
     cdef float prob_1 = pg_1 * ro
 
-    cdef float new_ro = prob_1 / (prob_1 + prob_0)
+    cdef float new_ro = prob_1 / (prob_1 + prob_0)'''
 
     return new_ro
 
@@ -240,10 +244,6 @@ cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, 
     else:
         N_s = samp_num + burnin
 
-    cdef np.ndarray[DTYPE_t, ndim=2] samples_w_i = np.zeros((N_s, T), dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=2] samples_J_i = np.zeros((N_s, N), dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=2] samples_gamma_i = np.zeros((N_s, N), dtype=DTYPE)
-
     cdef np.ndarray[DTYPE_t, ndim=1] gamma_i = np.ones(N, dtype=DTYPE)
     cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N).astype(DTYPE))
 
@@ -259,13 +259,9 @@ cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, 
         gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
 
-        samples_w_i[i, :] = w_i
-        samples_J_i[i, :] = J_i
-        samples_gamma_i[i, :] = gamma_i
-
-    res[0, :, :] = w_i
-    res[1, :, :N] = J_i
-    res[2, :, :N] = gamma_i
+        res[0, :, :] = w_i
+        res[1, :, :N] = J_i
+        res[2, :, :N] = gamma_i
 
     if thin == 0:
         return res[:, burnin:, :]
@@ -346,6 +342,6 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
     else:
         res = sample_neuron_cython_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin)
 
-    return res[0, :,:], res[1, :, :N], res[2, :, :N]
+    return res
 
 
