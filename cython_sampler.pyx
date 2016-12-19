@@ -1,4 +1,4 @@
-import numpy as np
+#import numpy as np
 cimport numpy as np
 import pypolyagamma as pypolyagamma
 
@@ -215,8 +215,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_gamma_i(np.ndarray[DTYPE_t, ndim=1] gamm
 cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, float sigma_J,
                     np.ndarray[DTYPE_t, ndim=2] S,
                     np.ndarray[DTYPE_t, ndim=1] D_i,
-                    float ro, int thin=0,
-                    bint save_all=True):
+                    float ro, int thin=0):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
@@ -262,7 +261,7 @@ cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, 
 
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-        # samples_gamma_i[i, :] = gamma_i
+        samples_gamma_i[i, :] = gamma_i
 
     res[0, :, :] = w_i
     res[1, :, :N] = J_i
@@ -274,6 +273,65 @@ cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython(int samp_num, int burnin, 
         return res[:, burnin:N_s:thin, :]
 
 
+cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython_save_sufficient(int samp_num, int burnin, float sigma_J,
+                    np.ndarray[DTYPE_t, ndim=2] S,
+                    np.ndarray[DTYPE_t, ndim=1] D_i,
+                    float ro, int thin=0):
+    """ This function uses the Gibbs sampler to sample from w, gamma and J
+
+    :param samp_num: Number of samples to be drawn
+    :param burnin: Number of samples to burn in
+    :param sigma_J: variance of the J slab
+    :param S: Neurons' activity matrix. Including S0. (T + 1) x N
+    :param C: observation correlation matrix. N x N
+    :param D_i: time delay correlations of neuron i. N
+    :return: samp_num samples (each one of length K (time_steps)) from the posterior distribution for w,x,z.
+    """
+
+    # random.seed(seed)
+
+    cdef int T = S.shape[0]
+    cdef int N = S.shape[1]
+
+    cdef int N_s
+
+    # actual number of samples needed with thining and burin-in
+    if (thin != 0):
+        N_s = samp_num * thin + burnin
+    else:
+        N_s = samp_num + burnin
+
+    cdef np.ndarray[DTYPE_t, ndim=1] gamma_i = np.ones(N, dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=1] J_i = np.multiply(gamma_i, np.random.normal(0, sigma_J, N).astype(DTYPE))
+
+    cdef np.ndarray[DTYPE_t, ndim=1] w_i
+    cdef np.ndarray[DTYPE_t, ndim=2] C_w_i
+
+    cdef np.ndarray[DTYPE_t, ndim=3] res = np.zeros((2, 3, T), dtype=DTYPE)
+
+    for i in xrange(N_s):
+        # import ipdb; ipdb.set_trace()
+        w_i = sample_w_i(S, J_i)
+        C_w_i = calculate_C_w(S, w_i)
+        gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
+        J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
+
+        if N_s > burnin:
+            res[0, 0, :] += w_i
+            res[0, 1, :N] += J_i
+            res[0, 2, :N] += gamma_i
+
+            res[1, 0, :] += np.power(w_i, 2)
+            res[1, 1, :N] += np.power(J_i, 2)
+            res[1, 2, :N] += np.power(gamma_i, 2)
+
+    res[:, :, :] = res[:, :, :] / float(samp_num)
+
+    res[1, :, :] -= np.power(res[0, :, :], 2)
+
+    return res
+
+
 def sample_neuron(int samp_num, int burnin, float sigma_J,
                     np.ndarray[DTYPE_t, ndim=2] S,
                     np.ndarray[DTYPE_t, ndim=1] D_i,
@@ -281,7 +339,12 @@ def sample_neuron(int samp_num, int burnin, float sigma_J,
                     bint save_all=True):
 
     cdef int N = S.shape[1]
-    cdef np.ndarray[DTYPE_t, ndim=3] res = sample_neuron_cython(samp_num, burnin, sigma_J, S, D_i, ro, thin, save_all)
+    cdef np.ndarray[DTYPE_t, ndim=3] res
+
+    if save_all:
+        res = sample_neuron_cython(samp_num, burnin, sigma_J, S, D_i, ro, thin)
+    else:
+        res = sample_neuron_cython_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin)
 
     return res[0, :,:], res[1, :, :N], res[2, :, :N]
 

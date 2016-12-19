@@ -125,7 +125,7 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     burnin = 20
     thin = 0
 
-    save_all = True
+    save_all = False
 
     dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)
 
