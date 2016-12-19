@@ -162,8 +162,8 @@ cdef float calc_gamma_prob(float sigma_J,
     cdef double sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
 
-    cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
-                               np.log(prefactor_1) - np.log(prefactor_0)))
+    cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
+                               np.log(prefactor_0) - np.log(prefactor_1)))
     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
     cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
 

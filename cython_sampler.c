@@ -5695,7 +5695,7 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
  *     cdef double sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
  *     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))             # <<<<<<<<<<<<<<
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
  */
   __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 163; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
@@ -5773,8 +5773,8 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   /* "Ising_model_gibbs_sampler/cython_sampler.pyx":165
  *     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +             # <<<<<<<<<<<<<<
- *                                np.log(prefactor_1) - np.log(prefactor_0)))
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +             # <<<<<<<<<<<<<<
+ *                                np.log(prefactor_0) - np.log(prefactor_1)))
  *     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
  */
   __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -5782,14 +5782,14 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_exp); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyFloat_FromDouble((__pyx_v_sq_1 - __pyx_v_sq_0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyFloat_FromDouble((__pyx_v_sq_0 - __pyx_v_sq_1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_log); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_ro); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = PyFloat_FromDouble((1. - __pyx_v_ro)); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_10 = NULL;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_9))) {
@@ -5826,7 +5826,7 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_log); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyFloat_FromDouble((1. - __pyx_v_ro)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_ro); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = NULL;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -5861,8 +5861,8 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
 
   /* "Ising_model_gibbs_sampler/cython_sampler.pyx":166
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
- *                                np.log(prefactor_1) - np.log(prefactor_0)))             # <<<<<<<<<<<<<<
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
+ *                                np.log(prefactor_0) - np.log(prefactor_1)))             # <<<<<<<<<<<<<<
  *     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
  *     cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
  */
@@ -5871,7 +5871,7 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_log); if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  __pyx_t_9 = PyFloat_FromDouble(__pyx_v_prefactor_1); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_9 = PyFloat_FromDouble(__pyx_v_prefactor_0); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_t_1 = NULL;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_10))) {
@@ -5903,8 +5903,8 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   /* "Ising_model_gibbs_sampler/cython_sampler.pyx":165
  *     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +             # <<<<<<<<<<<<<<
- *                                np.log(prefactor_1) - np.log(prefactor_0)))
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +             # <<<<<<<<<<<<<<
+ *                                np.log(prefactor_0) - np.log(prefactor_1)))
  *     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
  */
   __pyx_t_10 = PyNumber_Add(__pyx_t_3, __pyx_t_5); if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -5914,8 +5914,8 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
 
   /* "Ising_model_gibbs_sampler/cython_sampler.pyx":166
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
- *                                np.log(prefactor_1) - np.log(prefactor_0)))             # <<<<<<<<<<<<<<
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
+ *                                np.log(prefactor_0) - np.log(prefactor_1)))             # <<<<<<<<<<<<<<
  *     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
  *     cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
  */
@@ -5924,7 +5924,7 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_log); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_prefactor_0); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_prefactor_1); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 166; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_9 = NULL;
   if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_2))) {
@@ -5986,8 +5986,8 @@ static float __pyx_f_25Ising_model_gibbs_sampler_14cython_sampler_calc_gamma_pro
   /* "Ising_model_gibbs_sampler/cython_sampler.pyx":165
  *     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
  * 
- *     cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +             # <<<<<<<<<<<<<<
- *                                np.log(prefactor_1) - np.log(prefactor_0)))
+ *     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +             # <<<<<<<<<<<<<<
+ *                                np.log(prefactor_0) - np.log(prefactor_1)))
  *     '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
  */
   __pyx_t_4 = __Pyx_PyFloat_AddCObj(__pyx_float_1_, __pyx_t_11, 1., 0); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
