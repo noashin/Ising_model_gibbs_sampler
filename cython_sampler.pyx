@@ -295,14 +295,15 @@ cdef np.ndarray[DTYPE_t, ndim=3] sample_neuron_cython_save_sufficient(int samp_n
         gamma_i = sample_gamma_i(gamma_i, D_i, C_w_i, ro, sigma_J)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, gamma_i, sigma_J)
 
-        if N_s > burnin:
-            res[0, 0, :] += w_i
-            res[0, 1, :N] += J_i
-            res[0, 2, :N] += gamma_i
+        if i > burnin:
+            if (thin > 0 and i%thin == 0) or (thin == 0):
+                res[0, 0, :] += w_i
+                res[0, 1, :N] += J_i
+                res[0, 2, :N] += gamma_i
 
-            res[1, 0, :] += np.power(w_i, 2)
-            res[1, 1, :N] += np.power(J_i, 2)
-            res[1, 2, :N] += np.power(gamma_i, 2)
+                res[1, 0, :] += np.power(w_i, 2)
+                res[1, 1, :N] += np.power(J_i, 2)
+                res[1, 2, :N] += np.power(gamma_i, 2)
 
     res[:, :, :] = res[:, :, :] / float(samp_num)
 
