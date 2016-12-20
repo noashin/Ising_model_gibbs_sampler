@@ -165,7 +165,7 @@ cdef float calc_gamma_prob(float sigma_J,
 
     cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
                                np.log(prefactor_0) - np.log(prefactor_1)))
-    
+
     return new_ro
 
 
