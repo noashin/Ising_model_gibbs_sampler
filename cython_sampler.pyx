@@ -2,24 +2,9 @@ import numpy as np
 cimport numpy as np
 import pypolyagamma as pypolyagamma
 
-DTYPE = np.float32
-ctypedef float DTYPE_t
-ctypedef double DTYPE_d
-
-
-def calculate_D(np.ndarray[DTYPE_t, ndim=2] S):
-    cdef int N
-    cdef np.ndarray[DTYPE_t, ndim=2] D
-
-    N = S.shape[1]
-
-    D = np.zeros((N, N), dtype=DTYPE)
-
-    for i in range(N):
-        for j in range(N):
-            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
-
-    return D * 0.5
+DTYPE = np.float64
+#ctypedef np.float32_t DTYPE_t
+ctypedef np.float64_t DTYPE_t
 
 
 cdef np.ndarray[DTYPE_t, ndim=2] calculate_C_w(np.ndarray[DTYPE_t, ndim=2] S,
@@ -41,16 +26,16 @@ cdef np.ndarray[DTYPE_t, ndim=2] sample_w_i(np.ndarray[DTYPE_t, ndim=2] S,
     """
 
     cdef int T = S.shape[0]
-    cdef np.ndarray[DTYPE_d, ndim=1] A = np.ones(T)
-    cdef np.ndarray[DTYPE_d, ndim=1] w_i = np.zeros(T)
+    cdef np.ndarray[DTYPE_t, ndim=1] A = np.ones(T)
+    cdef np.ndarray[DTYPE_t, ndim=1] w_i = np.zeros(T)
 
     cdef int nthreads = pypolyagamma.get_omp_num_threads()
-    cdef np.ndarray[DTYPE_d, ndim=1] seeds = np.random.randint(2**16, size=nthreads).astype(np.float64)
+    cdef np.ndarray[DTYPE_t, ndim=1] seeds = np.random.randint(2**16, size=nthreads).astype(np.float64)
     ppgs = [pypolyagamma.PyPolyaGamma(seed) for seed in seeds]
 
     pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i).astype(np.float64), w_i)
 
-    return w_i.astype(np.float32)
+    return w_i.astype(DTYPE)
 
 
 cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
@@ -68,7 +53,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
     if included_ind.shape[0] == 0:
         return J_i
 
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(N, dtype=np.float32)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(N, dtype=DTYPE)
 
     cdef np.ndarray[DTYPE_t, ndim=2] C_gamma = C[:, included_ind][included_ind, :]
     cdef np.ndarray[DTYPE_t, ndim=2] cov_mat_gamma = cov_mat[included_ind, :][:, included_ind]
@@ -77,7 +62,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] sample_J_i(np.ndarray[DTYPE_t, ndim=2] S,
     cdef np.ndarray[DTYPE_t, ndim=2] cov = np.linalg.inv(C_gamma + cov_mat_gamma)
     cdef np.ndarray[DTYPE_t, ndim=1] mean = np.dot(cov, D_i_gamma)
 
-    cdef np.ndarray[DTYPE_t, ndim=1] J_i_gamma = np.random.multivariate_normal(mean, cov).astype(np.float32)
+    cdef np.ndarray[DTYPE_t, ndim=1] J_i_gamma = np.random.multivariate_normal(mean, cov).astype(DTYPE)
 
     J_i[included_ind] = J_i_gamma
 
@@ -89,7 +74,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
                     float sigma_J,
                     int num_active):
 
-    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=np.float32)
+    cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=DTYPE)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
     cdef double max_mat = np.max(mat)
     mat = mat / max_mat
@@ -128,7 +113,7 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
 
     else:
         det_A = np.linalg.det(A)
-        A_inv = np.linalg.inv(A).astype(np.float32)
+        A_inv = np.linalg.inv(A).astype(DTYPE)
         pre_factor_0 = det_cov_0 / (det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
         pre_factor_1 = det_cov_1 / (max_mat * det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
 

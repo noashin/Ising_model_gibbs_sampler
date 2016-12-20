@@ -9,8 +9,20 @@ import pickle
 import time
 import os
 
-from cython_sampler import sample_neuron, calculate_D
+from cython_sampler import sample_neuron
 from network_simulator import spike_and_slab, generate_spikes
+
+
+def calculate_D(S):
+    N = S.shape[1]
+
+    D = np.zeros((N, N))
+
+    for i in range(N):
+        for j in range(N):
+            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
+
+    return D * 0.5
 
 
 def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0, save_all=True):
@@ -115,21 +127,19 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 20
-    T = 5000
-    ro = 0.3
-    sigma_J = 1. / N
-    num_processes = 10
-    samp_num = 5000
+    N = 10
+    T = 1000
+    ro = 0.5
+    sigma_J = 1. #/ N
+    num_processes = 1
+    samp_num = 1000
 
-    burnin = 1000
+    burnin = 100
     thin = 0
 
     save_all = False
 
     file_S_J = ''
-
-
 
     if not file_S_J:
         S, J = generate_J_S(0, N, T, ro, sigma_J)
