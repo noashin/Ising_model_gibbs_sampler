@@ -127,13 +127,24 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
 
     save_all = False
 
+    file_S_J = ''
+
+
+
+    if not file_S_J:
+        S, J = generate_J_S(0, N, T, ro, sigma_J)
+    else:
+        with open(file_S_J) as f:
+            res = pickle.load(f)
+            S = res[1]
+            J = res[0]
+            T, N = S.shape()
+
     dir_name = './%s_%s_%s_%s_%s_%s_%s' % (time.strftime("%Y%m%d-%H%M%S"), N, T, ro, samp_num, thin, sigma_J)
 
     print dir_name
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-
-    S, J = generate_J_S(0, N, T, ro, sigma_J)
 
     with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
         pickle.dump([J, S], f)
