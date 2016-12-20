@@ -126,32 +126,8 @@ def calc_gamma_prob(sigma_J, C_gamma, D_i_gamma, ro, j_rel):
     sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
     sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
 
-    pg_1 = np.exp(sq_1 + np.log(prefactor_1))
-    pg_0 = np.exp(sq_0 + np.log(prefactor_0))
-
-    
-    if np.isinf(pg_1) and np.isinf(pg_0):
-        sq = min(sq_1, sq_0)
-        pg_1 = np.exp(sq_1 + np.log(prefactor_1) - sq)
-        pg_0 = np.exp(sq_0 + np.log(prefactor_0) - sq)
-
-    if np.isinf(pg_0) and ~np.isinf(pg_1):
-        return 0
-    elif np.isinf(pg_1) and ~np.isinf(pg_0):
-        return 1
-
-    # gauss_0 = np.exp(0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0)))
-    # gauss_1 = np.exp(0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma)))
-
-    # import ipdb; ipdb.set_trace()
-    prob_0 = pg_0 * (1. - ro)
-    prob_1 = pg_1 * ro
-
-    new_ro = prob_1 / (prob_1 + prob_0)
-
-    if np.isnan(new_ro):
-        import ipdb;
-        ipdb.set_trace()
+    new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
+                               np.log(prefactor_0) - np.log(prefactor_1)))
 
     return new_ro
 
@@ -183,7 +159,7 @@ def sample_gamma_i(gamma_i, D_i, C, ro, sigmma_J):
     return gamma_i
 
 
-def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
+def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
