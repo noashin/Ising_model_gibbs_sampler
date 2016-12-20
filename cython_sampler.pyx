@@ -1,4 +1,4 @@
-#import numpy as np
+import numpy as np
 cimport numpy as np
 import pypolyagamma as pypolyagamma
 
@@ -91,7 +91,8 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
 
     cdef np.ndarray[DTYPE_t, ndim=2] cov_mat = (1. / sigma_J) * np.identity(num_active, dtype=np.float32)
     cdef np.ndarray[DTYPE_t, ndim=2] mat = cov_mat + C_gamma
-    mat = mat / np.max(mat)
+    cdef double max_mat = np.max(mat)
+    mat = mat / max_mat
 
     cdef np.ndarray[DTYPE_t, ndim=2] A = mat[:j_rel, :j_rel]
 
@@ -114,22 +115,22 @@ cdef np.ndarray[DTYPE_t, ndim=1] calc_block_dets(np.ndarray[DTYPE_t, ndim=2] C_g
     # import ipdb;ipdb.set_trace()
     # If the matrix is small don't bother to split
     if mat.shape[0] < 5.:
-        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
+        pre_factor_1 = (det_cov_1 / (np.linalg.det(mat) * max_mat))
         pre_factor_0 = (det_cov_0 / np.linalg.det(np.delete(np.delete(mat, j_rel, 0), j_rel, 1)))
 
     elif j_rel == 0:
-        pre_factor_0 = (det_cov_0 / np.linalg.det(D_0))
-        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
+        pre_factor_0 = det_cov_0 / np.linalg.det(D_0)
+        pre_factor_1 = det_cov_1 / (np.linalg.det(mat) * max_mat)
 
     elif j_rel == num_active - 1:
-        pre_factor_0 = (det_cov_0 / np.linalg.det(A))
-        pre_factor_1 = (det_cov_1 / np.linalg.det(mat))
+        pre_factor_0 = det_cov_0 / np.linalg.det(A)
+        pre_factor_1 = det_cov_1 / (np.linalg.det(mat) * max_mat)
 
     else:
         det_A = np.linalg.det(A)
         A_inv = np.linalg.inv(A).astype(np.float32)
         pre_factor_0 = det_cov_0 / (det_A * np.linalg.det(D_0 - np.dot(C_0, np.dot(A_inv, B_0))))
-        pre_factor_1 = det_cov_1 / (det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
+        pre_factor_1 = det_cov_1 / (max_mat * det_A * np.linalg.det(D_1 - np.dot(C_1, np.dot(A_inv, B_1))))
 
     cdef np.ndarray[DTYPE_t, ndim=1] res = np.array([np.sqrt(pre_factor_0), np.sqrt(pre_factor_1)]).astype(DTYPE)
 
@@ -162,27 +163,9 @@ cdef float calc_gamma_prob(float sigma_J,
     cdef double sq_1 = 0.5 * np.dot(D_i_gamma.T, np.dot(mat_inv, D_i_gamma))
     cdef double sq_0 = 0.5 * np.dot(D_i_gamma_0.T, np.dot(mat_0_inv, D_i_gamma_0))
 
-    cdef double new_ro = 1. / (1. + np.exp(sq_1 - sq_0 + np.log(ro) - np.log(1. - ro) +
-                               np.log(prefactor_1) - np.log(prefactor_0)))
-    '''cdef float pg_1 = np.exp(sq_1 + np.log(prefactor_1))
-    cdef float pg_0 = np.exp(sq_0 + np.log(prefactor_0))
-
-    cdef float sq
-    if np.isinf(pg_1) and np.isinf(pg_0):
-        sq = min(sq_1, sq_0)
-        pg_1 = np.exp(sq_1 + np.log(prefactor_1) - sq)
-        pg_0 = np.exp(sq_0 + np.log(prefactor_0) - sq)
-
-    if np.isinf(pg_0) and ~np.isinf(pg_1):
-        return 0
-    elif np.isinf(pg_1) and ~np.isinf(pg_0):
-        return 1
-
-    cdef float prob_0 = pg_0 * (1. - ro)
-    cdef float prob_1 = pg_1 * ro
-
-    cdef float new_ro = prob_1 / (prob_1 + prob_0)'''
-
+    cdef double new_ro = 1. / (1. + np.exp(sq_0 - sq_1 + np.log(1. - ro) - np.log(ro) +
+                               np.log(prefactor_0) - np.log(prefactor_1)))
+    
     return new_ro
 
 

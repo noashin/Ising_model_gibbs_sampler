@@ -115,14 +115,14 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 5
-    T = 100
-    ro = 0.5
+    N = 20
+    T = 5000
+    ro = 0.3
     sigma_J = 1. / N
-    num_processes = 1
-    samp_num = 100
+    num_processes = 10
+    samp_num = 5000
 
-    burnin = 20
+    burnin = 1000
     thin = 0
 
     save_all = False
