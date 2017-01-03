@@ -9,7 +9,7 @@ import pickle
 import time
 import os
 
-from cython_sampler import sample_neuron
+from sampler_geweke import sample_neuron
 from network_simulator import spike_and_slab, generate_spikes
 
 
@@ -134,7 +134,7 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
     num_processes = 1
     samp_num = 1000
 
-    burnin = 100
+    burnin = 10
     thin = 0
 
     save_all = False

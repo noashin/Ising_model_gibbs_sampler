@@ -5,18 +5,6 @@ import numpy as np
 import pypolyagamma as pypolyagamma
 
 
-def calculate_D(S):
-    N = S.shape[1]
-
-    D = np.empty((N, N))
-
-    for i in range(N):
-        for j in range(N):
-            D[i, j] = np.dot(S[1:, i].T, S[:-1, j])
-
-    return D * 0.5
-
-
 def calculate_C_w(S, w_i):
     w_mat = np.diag(w_i)
 
@@ -31,7 +19,7 @@ def sample_w_i(S, J_i):
     :return: samples for w_i from a polyagamma distribution
     """
     nthreads = pypolyagamma.get_omp_num_threads()
-    seeds = np.random.randint(2**16, size=nthreads)
+    seeds = np.random.randint(2 ** 16, size=nthreads)
     ppgs = [pypolyagamma.PyPolyaGamma(seed) for seed in seeds]
 
     T = S.shape[0]
@@ -204,4 +192,4 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
         return samples_w_i[burnin:, :], samples_J_i[burnin:, :], samples_gamma_i[burnin:, :]
     else:
         return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :], \
-            samples_gamma_i[burnin:N_s:thin, :]
+               samples_gamma_i[burnin:N_s:thin, :]
