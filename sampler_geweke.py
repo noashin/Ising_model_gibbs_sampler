@@ -1,3 +1,6 @@
+from __future__ import division
+
+
 import time
 import random
 
@@ -30,7 +33,6 @@ def sample_w_i(S, J_i):
     pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i), w_i)
     return w_i
 
-
 def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
     N = S.shape[1]
 
@@ -45,15 +47,15 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
         mu_j = mu[j]
         J_ij = J_i[j]
 
-        alpha = np.dot(v_j.T, (J_i - mu)) - v_jj * (J_ij - mu_j)
+        alpha = np.dot(v_j, (J_i - mu)) - v_jj * (J_ij - mu_j)
 
-        new_var = 1 / (2 * v_jj)
-        new_mean = mu_j - alpha * new_var
+        #new_var = 1 / (2 * v_jj)
+        #new_mean = mu_j - alpha * new_var
 
-        q_0 = np.exp(mu_j * alpha - mu_j ** 2 * v_jj)
-        q_1 = np.sqrt(2 * np.pi * new_var) * np.exp(alpha ** 2 * new_var / 2.)
+        q_0_fac = mu_j * alpha - mu_j ** 2 * v_jj
+        q_1_fac = alpha ** 2  / (4 * v_jj) #* new_var / 2.
 
-        BF = q_0 / q_1
+        BF = np.exp(q_0_fac - q_1_fac) / np.sqrt(np.pi / v_jj)
 
         '''v_jj = C_w_i[j, j]
         mu_j = mu[j]
@@ -72,20 +74,24 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
               * np.sqrt(2 * v_jj + 1.)'''
 
         prob_1 = ro / (ro + BF * (1. - ro))
-        gamma_ij = np.random.binomial(1, prob_1, 1)
+        try:
+            gamma_ij = np.random.binomial(1, prob_1, 1)
+        except ValueError:
+            import ipdb; ipdb.set_trace()
 
         if gamma_ij == 0:
             J_i[j] = 0
         else:
-            samps = np.random.multivariate_normal(mu, cov)
-            #J_i[j] = np.random.normal(new_mean, np.sqrt(new_var))
-            J_i[j] = samps[j]
-            print np.sqrt(new_var)
+            #samps = np.random.multivariate_normal(mu, cov_inv)
+            J_i[j] = np.random.normal(mu_j - alpha / (2 * v_jj), np.sqrt(1. / (2. * v_jj)))
+            #J_i[j] = samps[j]
+            #print np.sqrt(new_var)
 
     return J_i
 
 
 def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
+    print thin
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
