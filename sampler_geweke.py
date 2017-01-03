@@ -34,11 +34,28 @@ def sample_w_i(S, J_i):
 def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
     N = S.shape[1]
 
-    C_w_i_inv = np.linalg.inv(C_w_i)
-    mu = np.dot(C_w_i_inv, D_i)
+    cov = C_w_i + sigma_J * np.identity(N)
+    cov_inv = np.linalg.inv(cov)
+    mu = np.dot(cov_inv, D_i)
 
     for j in range(N):
-        v_jj = C_w_i[j, j]
+        #import ipdb; ipdb.set_trace()
+        v_j = cov[j]
+        v_jj = cov[j, j]
+        mu_j = mu[j]
+        J_ij = J_i[j]
+
+        alpha = np.dot(v_j.T, (J_i - mu)) - v_jj * (J_ij - mu_j)
+
+        new_var = 1 / (2 * v_jj)
+        new_mean = mu_j - alpha * new_var
+
+        q_0 = np.exp(mu_j * alpha - mu_j ** 2 * v_jj)
+        q_1 = np.sqrt(2 * np.pi * new_var) * np.exp(alpha ** 2 * new_var / 2.)
+
+        BF = q_0 / q_1
+
+        '''v_jj = C_w_i[j, j]
         mu_j = mu[j]
         alpha = mu[j] * (np.dot(C_w_i[j].T, (J_i - mu)) - v_jj * J_i[j])
 
@@ -48,19 +65,20 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
 
         factor_0 = mu[j] * D_i[j] - mu[j] ** 2 * v_jj
 
-        #BF = np.sqrt(2. * v_jj + 1.) * \
-        #     np.exp(-factor_0 + mean_nom ** 2 / (2. * new_var) - mu_j * (2 * alpha - mu_j * v_jj))
+        BF = np.sqrt(2. * v_jj + 1.) * \
+             np.exp(-factor_0 + mean_nom ** 2 / (2. * new_var) - mu_j * (2 * alpha - mu_j * v_jj))
 
         BF = np.exp(factor_0 - mu_j * (alpha - mu_j * v_jj) + mean_nom ** 2 / (2. * new_var))\
-              * np.sqrt(2 * v_jj + 1.)
+              * np.sqrt(2 * v_jj + 1.)'''
+
         prob_1 = ro / (ro + BF * (1. - ro))
         gamma_ij = np.random.binomial(1, prob_1, 1)
 
         if gamma_ij == 0:
             J_i[j] = 0
         else:
-            J_i[j] = np.random.normal(new_mean, 1. / new_var)
-            print 1. / new_var
+            J_i[j] = np.random.normal(new_mean, np.sqrt(new_var))
+            print np.sqrt(new_var)
 
     return J_i
 
