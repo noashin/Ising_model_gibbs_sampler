@@ -77,7 +77,9 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
         if gamma_ij == 0:
             J_i[j] = 0
         else:
-            J_i[j] = np.random.normal(new_mean, np.sqrt(new_var))
+            samps = np.random.multivariate_normal(mu, cov)
+            #J_i[j] = np.random.normal(new_mean, np.sqrt(new_var))
+            J_i[j] = samps[j]
             print np.sqrt(new_var)
 
     return J_i
