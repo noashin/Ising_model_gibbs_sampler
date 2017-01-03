@@ -132,3 +132,61 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
         return samples_w_i[burnin:, :], samples_J_i[burnin:, :]
     else:
         return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :]
+
+
+def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
+    """ This function uses the Gibbs sampler to sample from w, gamma and J
+
+    :param samp_num: Number of samples to be drawn
+    :param burnin: Number of samples to burn in
+    :param sigma_J: variance of the J slab
+    :param S: Neurons' activity matrix. Including S0. (T + 1) x N
+    :param C: observation correlation matrix. N x N
+    :param D_i: time delay correlations of neuron i. N
+    :return: samp_num samples (each one of length K (time_steps)) from the posterior distribution for w,x,z.
+    """
+
+    # random.seed(seed)
+
+    T,N = S.shape
+
+    # actual number of samples needed with thining and burin-in
+    if (thin != 0):
+        N_s = samp_num * thin + burnin
+    else:
+        N_s = samp_num + burnin
+
+    J_i = np.random.normal(0, sigma_J, N)
+
+    res = np.zeros((2, 3, T))
+
+    for i in xrange(N_s):
+        # import ipdb; ipdb.set_trace()
+        w_i = sample_w_i(S, J_i)
+        C_w_i = calculate_C_w(S, w_i)
+        J_i = sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro)
+
+        if i > burnin:
+            if (thin > 0 and i%thin == 0) or (thin == 0):
+                res[0, 0, :] += w_i
+                res[0, 1, :N] += J_i
+
+                res[1, 0, :] += np.power(w_i, 2)
+                res[1, 1, :N] += np.power(J_i, 2)
+
+    res[:, :, :] = res[:, :, :] / float(samp_num)
+
+    res[1, :, :] -= np.power(res[0, :, :], 2)
+
+    return res
+
+
+def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
+
+    N = S.shape[1]
+    if save_all:
+        res = sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin)
+    else:
+        res = sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin)
+
+    return res
