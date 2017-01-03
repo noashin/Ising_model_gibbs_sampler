@@ -9,7 +9,7 @@ import pickle
 import time
 import os
 
-from sampler_geweke import sample_neuron
+from sampler_no_sparsity import sample_neuron
 from network_simulator import spike_and_slab, generate_spikes
 
 
@@ -129,12 +129,12 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
          activity_mat_file, bias, num_trials):
     N = 10
     T = 1000
-    ro = 0.5
+    ro = 1.0
     sigma_J = 1. #/ N
     num_processes = 1
-    samp_num = 1000
+    samp_num = 3000
 
-    burnin = 10
+    burnin = 100
     thin = 0
 
     save_all = False
@@ -160,26 +160,6 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
         pickle.dump([J, S], f)
 
     do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin, save_all)
-
-    '''
-    # If not generate S and J
-    else:
-        num_neurons = [int(num) for num in num_neurons.split(',')]
-        time_steps = [int(num) for num in time_steps.split(',')]
-        for i in range(num_trials):
-            for N in num_neurons:
-                for T in time_steps:
-                    v_s = 1 #/ np.sqrt(N)
-                    dir_name = get_dir_name(ppriors, N, T, sparsity, likelihood_function)
-                    S, J, cdf_factor = generate_J_S(likelihood_function, bias, N, T, sparsity, v_s)
-                    J_est_EPs = []
-                    log_evidences = []
-                    for pprior in ppriors:
-                        results = do_inference(S, J, N, num_processes, pprior, cdf_factor, v_s)
-                        J_est_EPs.append(results[0])
-                        log_evidences.append(results[1])
-                    save_inference_results_to_file(dir_name, S, J, bias, J_est_EPs, likelihood_function,
-                                                   ppriors, log_evidences, [], i)'''
 
 
 if __name__ == "__main__":
