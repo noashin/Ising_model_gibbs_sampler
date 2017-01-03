@@ -52,7 +52,7 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
         #     np.exp(-factor_0 + mean_nom ** 2 / (2. * new_var) - mu_j * (2 * alpha - mu_j * v_jj))
 
         BF = np.exp(factor_0 - mu_j * (alpha - mu_j * v_jj) + mean_nom ** 2 / (2. * new_var))\
-             / np.sqrt(2 * v_jj + 1.)
+              * np.sqrt(2 * v_jj + 1.)
         prob_1 = ro / (ro + BF * (1. - ro))
         gamma_ij = np.random.binomial(1, prob_1, 1)
 
