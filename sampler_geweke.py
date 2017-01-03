@@ -90,7 +90,7 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
     return J_i
 
 
-def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
+def sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
     print thin
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
@@ -183,9 +183,8 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0)
 
 def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
 
-    N = S.shape[1]
     if save_all:
-        res = sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin)
+        res = sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin)
     else:
         res = sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin)
 
