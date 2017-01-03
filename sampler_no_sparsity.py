@@ -43,7 +43,7 @@ def sample_J_i(S, C, D_i, w_i, sigma_J):
     N = S.shape[1]
 
     cov_mat = (1. / sigma_J) * np.identity(N)
-    
+
     cov = np.linalg.inv(C + cov_mat)
     mean = np.dot(cov, D_i)
 
@@ -52,7 +52,7 @@ def sample_J_i(S, C, D_i, w_i, sigma_J):
     return J_i
 
 
-def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
+def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
@@ -63,8 +63,6 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     :param D_i: time delay correlations of neuron i. N
     :return: samp_num samples (each one of length K (time_steps)) from the posterior distribution for w,x,z.
     """
-
-    # random.seed(seed)
 
     T, N = S.shape
 
@@ -80,14 +78,12 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0):
     J_i = np.random.normal(0, sigma_J, N)
 
     for i in xrange(N_s):
-        # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
         J_i = sample_J_i(S, C_w_i, D_i, w_i, sigma_J)
-	# import ipdb; ipdb.set_trace()
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
-    # import ipdb; ipdb.set_trace()
+
     if thin == 0:
         return samples_w_i[burnin:, :], samples_J_i[burnin:, :]
     else:
