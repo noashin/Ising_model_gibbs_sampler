@@ -184,8 +184,7 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0)
 
 def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
     # First - reseed!!
-    seed = os.urandom(2 ** 32)
-    np.random.seed(seed=seed)
+    np.random.seed()
 
 
     if save_all:
