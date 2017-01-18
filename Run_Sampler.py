@@ -9,7 +9,7 @@ import pickle
 import time
 import os
 
-from sampler_no_sparsity import sample_neuron
+from sampler_geweke import sample_neuron
 from network_simulator import spike_and_slab, generate_spikes
 
 
