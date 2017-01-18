@@ -1,6 +1,5 @@
 from __future__ import division
 
-
 import time
 import random
 
@@ -9,7 +8,7 @@ import numpy as np
 import pypolyagamma as pypolyagamma
 
 
-#fixme taking everything to 0 !!! :( even when gamma = 1
+# fixme taking everything to 0 !!! :( even when gamma = 1
 
 def calculate_C_w(S, w_i):
     w_mat = np.diag(w_i)
@@ -34,15 +33,18 @@ def sample_w_i(S, J_i):
     pypolyagamma.pgdrawvpar(ppgs, A, np.dot(S, J_i), w_i)
     return w_i
 
-def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
+
+def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro):
     N = S.shape[1]
 
     cov = C_w_i + sigma_J * np.identity(N)
     cov_inv = np.linalg.inv(cov)
     mu = np.dot(cov_inv, D_i)
 
+    gamma_i = np.zeros(N)
+
     for j in range(N):
-        #import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         v_j = cov[j]
         v_jj = cov[j, j]
         mu_j = mu[j]
@@ -50,45 +52,26 @@ def sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro):
 
         alpha = np.dot(v_j, (J_i - mu)) - v_jj * (J_ij - mu_j)
 
-        #new_var = 1 / (2 * v_jj)
-        #new_mean = mu_j - alpha * new_var
-
         q_0_fac = mu_j * alpha - mu_j ** 2 * v_jj
-        q_1_fac = alpha ** 2  / (4 * v_jj) #* new_var / 2.
+        q_1_fac = alpha ** 2 / (4 * v_jj)  # * new_var / 2.
 
         BF = np.exp(q_0_fac - q_1_fac) / np.sqrt(np.pi / v_jj)
-
-        '''v_jj = C_w_i[j, j]
-        mu_j = mu[j]
-        alpha = mu[j] * (np.dot(C_w_i[j].T, (J_i - mu)) - v_jj * J_i[j])
-
-        new_var = 2 * v_jj + 1 / sigma_J
-        mean_nom = 2 * mu_j * v_jj - alpha
-        new_mean = mean_nom / new_var
-
-        factor_0 = mu[j] * D_i[j] - mu[j] ** 2 * v_jj
-
-        BF = np.sqrt(2. * v_jj + 1.) * \
-             np.exp(-factor_0 + mean_nom ** 2 / (2. * new_var) - mu_j * (2 * alpha - mu_j * v_jj))
-
-        BF = np.exp(factor_0 - mu_j * (alpha - mu_j * v_jj) + mean_nom ** 2 / (2. * new_var))\
-              * np.sqrt(2 * v_jj + 1.)'''
 
         prob_1 = ro / (ro + BF * (1. - ro))
         try:
             gamma_ij = np.random.binomial(1, prob_1, 1)
         except ValueError:
-            import ipdb; ipdb.set_trace()
+            import ipdb;
+            ipdb.set_trace()
+
+        gamma_i[j] = gamma_ij
 
         if gamma_ij == 0:
             J_i[j] = 0
         else:
-            #samps = np.random.multivariate_normal(mu, cov_inv)
             J_i[j] = np.random.normal(mu_j - alpha / (2 * v_jj), np.sqrt(1. / (2. * v_jj)))
-            #J_i[j] = samps[j]
-            #print np.sqrt(new_var)
 
-    return J_i
+    return J_i, gamma_i
 
 
 def sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
@@ -116,18 +99,20 @@ def sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_a
 
     samples_w_i = np.zeros((N_s, T), dtype=np.float32)
     samples_J_i = np.zeros((N_s, N), dtype=np.float32)
+    samples_gamma_i = np.zeros((N_s, N), dtype=np.float32)
 
     J_i = np.random.normal(0, sigma_J, N)
 
     for i in xrange(N_s):
-        #print i
+        # print i
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        J_i = sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro)
+        J_i, gamma_i = sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro)
 
         samples_w_i[i, :] = w_i
         samples_J_i[i, :] = J_i
+        samples_gamma_i[i, :] = gamma_i
 
     if thin == 0:
         return samples_w_i[burnin:, :], samples_J_i[burnin:, :]
@@ -149,7 +134,7 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0)
 
     # random.seed(seed)
 
-    T,N = S.shape
+    T, N = S.shape
 
     # actual number of samples needed with thining and burin-in
     if (thin != 0):
@@ -158,22 +143,23 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0)
         N_s = samp_num + burnin
 
     J_i = np.random.normal(0, sigma_J, N)
-
     res = np.zeros((2, 3, T))
 
     for i in xrange(N_s):
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        J_i = sample_J_i(S, C_w_i, D_i, sigma_J, J_i, ro)
+        J_i, gamma_i = sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro)
 
         if i > burnin:
-            if (thin > 0 and i%thin == 0) or (thin == 0):
+            if (thin > 0 and i % thin == 0) or (thin == 0):
                 res[0, 0, :] += w_i
                 res[0, 1, :N] += J_i
+                res[0, 2, :N] += gamma_i
 
                 res[1, 0, :] += np.power(w_i, 2)
                 res[1, 1, :N] += np.power(J_i, 2)
+                res[1, 2, :N] += gamma_i
 
     res[:, :, :] = res[:, :, :] / float(samp_num)
 
@@ -185,7 +171,6 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin=0)
 def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_all=True):
     # First - reseed!!
     np.random.seed()
-
 
     if save_all:
         res = sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin)
