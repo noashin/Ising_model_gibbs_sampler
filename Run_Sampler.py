@@ -72,7 +72,7 @@ def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
     return S, J
 
 
-def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all= True):
+def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all=True):
     T = S.shape[0]
     N = S.shape[1]
     D = calculate_D(S)
@@ -119,19 +119,18 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
               help='Set pprior for the EP. If a list the inference will be done for every pprior')
 @click.option('--activity_mat_file', type=click.STRING,
               default='')
-@click.option('--bias', type=click.INT,
-              default=0,
-              help='1 if bias should be included in the model, 0 otherwise')
 @click.option('--num_trials', type=click.INT,
               default=1,
               help='number of trials with different S ad J for given settings')
 def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
          activity_mat_file, bias, num_trials):
-    N = 10
-    T = 1000
-    ro = 1.0
-    sigma_J = 1. #/ N
-    num_processes = 1
+    N = num_neurons
+    T = time_steps
+    ro = sparsity
+    ppriors = [float(num) for num in pprior.split(',')]
+
+    sigma_J = 1.  # / N
+
     samp_num = 3000
 
     burnin = 100
@@ -158,8 +157,11 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
 
     with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
         pickle.dump([J, S], f)
-
-    do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin, save_all)
+    for pprior in ppriors:
+        dir_name_pprior = os.path.join(dir_name, pprior)
+        if not os.path.exists(dir_name_pprior):
+            os.makedirs(dir_name_pprior)
+        do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, pprior, dir_name, thin, save_all)
 
 
 if __name__ == "__main__":
