@@ -25,12 +25,13 @@ def calculate_D(S):
     return D * 0.5
 
 
-def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0, save_all=True):
+def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin=0, save_all=True, EM=False):
     file_name = '_'.join(str(n) for n in input_indices)
     results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin, save_all) for n in input_indices]
 
-    with open(os.path.join(dir_name, file_name), 'wb') as f:
-        pickle.dump(results, f)
+    if not EM:
+        with open(os.path.join(dir_name, file_name), 'wb') as f:
+            pickle.dump(results, f)
 
     return results
 
@@ -72,7 +73,7 @@ def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
     return S, J
 
 
-def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all=True):
+def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all=True, EM=False):
     T = S.shape[0]
     N = S.shape[1]
     D = calculate_D(S)
@@ -86,7 +87,7 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
     indices = range(N)
     inputs = [indices[i:i + N / num_processes] for i in range(0, len(indices), N / num_processes)]
     for input_indices in inputs:
-        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin, save_all))
+        args_multi.append((samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin, save_all, EM))
 
     results = do_multiprocess(args_multi, num_processes)
 
@@ -97,21 +98,36 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
     #        J_samps[:, i, :] = neuron[1]
     #        gamma_samps[:, i, :] = neuron[2]
 
-    return  # w_samps, J_samps, gamma_samps
+    return results # w_samps, J_samps, gamma_samps
+
+
+def EM(S, J, num_processes, samp_num, burnin, sigma_J, init_sparsity, dir_name, thin=0, save_all=True):
+    diff = 0
+    ro = init_sparsity
+    print ro
+    while diff < 0.9999999 or diff > 1.000001:
+        results = do_inference(S, J, num_processes, samp_num, burnin, sigma_J, ro, dir_name, 0, False, True)
+        gammas = np.array(results)[:,:,0,2,:]
+        new_ro = np.mean(gammas)
+        diff = new_ro / ro
+        ro = new_ro
+        print ro
+    for i, result in enumerate(results):
+        file_name = '_' + str(i)
+        with open(os.path.join(dir_name, file_name), 'wb') as f:
+            pickle.dump(result, f)
+    return
 
 
 @click.command()
-@click.option('--num_neurons',
+@click.option('--num_neurons', type=click.INT,
               help='number of neurons in the network. '
                    'If a list, the inference will be done for every number of neurons.')
-@click.option('--time_steps',
+@click.option('--time_steps', type=click.INT,
               help='Number of time stamps. Length of recording. '
                    'If a list, the inference will be done for every number of time steps.')
 @click.option('--num_processes', type=click.INT,
               default=1)
-@click.option('--likelihood_function', type=click.STRING,
-              default='probit',
-              help='Should be either probit or logistic')
 @click.option('--sparsity', type=click.FLOAT,
               default=0.3,
               help='Set sparsity of connectivity, aka ro parameter.')
@@ -122,8 +138,11 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
 @click.option('--num_trials', type=click.INT,
               default=1,
               help='number of trials with different S ad J for given settings')
-def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, pprior,
-         activity_mat_file, bias, num_trials):
+@click.option('--em',
+              default=False,
+              help='If True performs EM to find the most likely sparsity.')
+def main(num_neurons, time_steps, num_processes, sparsity, pprior,
+         activity_mat_file, num_trials, em):
     N = num_neurons
     T = time_steps
     ro = sparsity
@@ -131,19 +150,17 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
 
     sigma_J = 1.  # / N
 
-    samp_num = 3000
+    samp_num = 1000
 
     burnin = 100
     thin = 0
 
     save_all = False
 
-    file_S_J = ''
-
-    if not file_S_J:
+    if not activity_mat_file:
         S, J = generate_J_S(0, N, T, ro, sigma_J)
     else:
-        with open(file_S_J) as f:
+        with open(activity_mat_file) as f:
             res = pickle.load(f)
             S = res[1]
             J = res[0]
@@ -157,11 +174,15 @@ def main(num_neurons, time_steps, num_processes, likelihood_function, sparsity, 
 
     with open(os.path.join(dir_name, 'S_J'), 'wb') as f:
         pickle.dump([J, S], f)
-    for pprior in ppriors:
-        dir_name_pprior = os.path.join(dir_name, pprior)
-        if not os.path.exists(dir_name_pprior):
-            os.makedirs(dir_name_pprior)
-        do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, pprior, dir_name, thin, save_all)
+
+    if em:
+        EM(S, J, num_processes, samp_num, burnin, sigma_J, ppriors[0], dir_name, 0, False)
+    else:
+        for pprior in ppriors:
+            dir_name_pprior = os.path.join(dir_name, pprior)
+            if not os.path.exists(dir_name_pprior):
+                os.makedirs(dir_name_pprior)
+            do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, pprior, dir_name, thin, save_all)
 
 
 if __name__ == "__main__":
