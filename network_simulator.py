@@ -35,6 +35,8 @@ def spike_and_slab(ro, N, bias=0, v_s=1.0):
     '''
 
     gamma = stats.bernoulli.rvs(p=ro, size=(N + bias, N))
+    if bias:
+        gamma[N, :] = 1
     normal_dist = np.random.normal(0.0, v_s, (N + bias, N))
 
     return gamma * normal_dist
