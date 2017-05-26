@@ -16,9 +16,8 @@ def kinetic_ising_model(S, J):
     :return: numpy.ndarray (T,N)
         Probabilities that at time point t+1 neuron n fires
     """
-
     # compute fields
-    H = np.dot(S, J)
+    H = np.dot(S, J.T)
     # compute probabilities
     p = exp_cosh(H)
     # return
@@ -34,10 +33,10 @@ def spike_and_slab(ro, N, bias=0, v_s=1.0):
     :return:
     '''
 
-    gamma = stats.bernoulli.rvs(p=ro, size=(N + bias, N))
+    gamma = stats.bernoulli.rvs(p=ro, size=(N, N + bias))
     if bias:
-        gamma[N, :] = 1
-    normal_dist = np.random.normal(0.0, v_s, (N + bias, N))
+        gamma[:, N] = 1
+    normal_dist = np.random.normal(0.0, v_s, (N, N + bias))
 
     return gamma * normal_dist
 
@@ -70,13 +69,13 @@ def generate_spikes(N, T, S0, J, bias=0, no_spike=-1, save=False):
     X = np.random.rand(T - 1, N)
 
     # Iterate through all time points
-    for i in range(1, T):
+    for t in range(1, T):
         # Compute probabilities of neuron firing
-        p = kinetic_ising_model(np.array([S[i - 1]]), J)
+        p = kinetic_ising_model(np.array([S[t - 1]]), J)
         # Check if spike or not
         if no_spike == -1:
-            S[i, :N] = 2 * (X[i - 1] < p) - 1
+            S[t, :N] = 2 * (X[t - 1] < p) - 1
         else:
-            S[i, :N] = 2 * (X[i - 1] < p) / 2.0
+            S[t, :N] = 2 * (X[t - 1] < p) / 2.0
     S = S
     return S
