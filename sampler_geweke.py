@@ -37,9 +37,12 @@ def sample_w_i(S, J_i):
 def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias, bias_mean):
     N = S.shape[1]
 
-    cov = C_w_i + sigma_J * np.identity(N)
+    sigma_J_inv_mat = np.linalg.inv(sigma_J * np.identity(N))
+    cov = C_w_i + sigma_J_inv_mat
     cov_inv = np.linalg.inv(cov)
-    mu = np.dot(cov_inv, D_i)
+    m = np.zeros(D_i.shape)
+    m[-1] = bias_mean
+    mu = np.dot(cov_inv, D_i + np.dot(sigma_J_inv_mat, m))
 
     gamma_i = np.zeros(N)
 
@@ -59,7 +62,6 @@ def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias, bias_mean):
 
         if j == N - 1 and bias:
             gamma_ij = 1
-            mu_j = mu_j + cov_inv * bias_mean
         else:
             prob_1 = ro / (ro + BF * (1. - ro))
             try:
@@ -73,8 +75,10 @@ def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias, bias_mean):
         if gamma_ij == 0:
             J_i[j] = 0
         else:
-            J_i[j] = np.random.normal(mu_j - alpha / (2 * v_jj), np.sqrt(1. / (2. * v_jj)))
-    #import ipdb; ipdb.set_trace()
+            try:
+                J_i[j] = np.random.normal(mu_j - alpha / (2 * v_jj), np.sqrt(1. / (2. * v_jj)))
+            except ValueError:
+                import ipdb; ipdb.set_trace()
     return J_i, gamma_i
 
 
