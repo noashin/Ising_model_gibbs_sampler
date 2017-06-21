@@ -34,7 +34,7 @@ def sample_w_i(S, J_i):
     return w_i
 
 
-def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias):
+def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias, bias_mean):
     N = S.shape[1]
 
     cov = C_w_i + sigma_J * np.identity(N)
@@ -59,6 +59,7 @@ def sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias):
 
         if j == N - 1 and bias:
             gamma_ij = 1
+            mu_j = mu_j + cov_inv * bias_mean
         else:
             prob_1 = ro / (ro + BF * (1. - ro))
             try:
@@ -123,7 +124,7 @@ def sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin=0, save_a
         return samples_w_i[burnin:N_s:thin, :], samples_J_i[burnin:N_s:thin, :]
 
 
-def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias):
+def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias, bias_mean):
     """ This function uses the Gibbs sampler to sample from w, gamma and J
 
     :param samp_num: Number of samples to be drawn
@@ -152,7 +153,7 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n
         # import ipdb; ipdb.set_trace()
         w_i = sample_w_i(S, J_i)
         C_w_i = calculate_C_w(S, w_i)
-        J_i, gamma_i = sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias)
+        J_i, gamma_i = sample_J_gamma_i(S, C_w_i, D_i, sigma_J, J_i, ro, n, bias, bias_mean)
 
         if i > burnin:
             if (thin > 0 and i % thin == 0) or (thin == 0):
@@ -174,7 +175,7 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n
     return res
 
 
-def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias, save_all=True):
+def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias, bias_mean, save_all=True):
     # First - reseed!!
     np.random.seed()
     #import ipdb; ipdb.set_trace()
@@ -182,6 +183,6 @@ def sample_neuron(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias, save_all
         # TODO: Add bias!
         res = sample_neuron_save_all(samp_num, burnin, sigma_J, S, D_i, ro, thin)
     else:
-        res = sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias)
+        res = sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n, bias, bias_mean)
 
     return res

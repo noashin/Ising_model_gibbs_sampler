@@ -13,18 +13,15 @@ from sampler_geweke import sample_neuron
 from network_simulator import spike_and_slab, generate_spikes
 
 
-def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J):
-    if bias != 0 and bias != 1:
-        raise ValueError('bias should be either 1 or 0')
-
+def generate_J_S(bias, num_neurons, time_steps, sparsity, sigma_J, bias_mean):
     N = num_neurons
     T = time_steps
 
-    J = spike_and_slab(sparsity, N, bias, sigma_J)
+    J = spike_and_slab(sparsity, N, bias, sigma_J, bias_mean)
     J += 0.0
     S0 = - np.ones(N + bias)
 
-    S = generate_spikes(N, T, S0, J, bias)
+    S = generate_spikes(N, T, S0, J, bias, bias_mean)
 
     return S, J
 
@@ -41,9 +38,11 @@ def calculate_D(S):
     return D * 0.5
 
 
-def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin, save_all, EM, bias):
+def sample_neurons(samp_num, burnin, sigma_J, S, D_is, ro, input_indices, dir_name, thin, save_all, EM, bias,
+                   bias_mean):
     file_name = '_'.join(str(n) for n in input_indices)
-    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin, n, bias, save_all) for n in input_indices]
+    results = [sample_neuron(samp_num, burnin, sigma_J, S, D_is[n], ro, thin, n, bias, bias_mean, save_all) for n in
+               input_indices]
 
     if not EM:
         with open(os.path.join(dir_name, file_name), 'wb') as f:
@@ -73,8 +72,7 @@ def do_multiprocess(function_args, num_processes):
 
 
 def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_name, thin=0, save_all=False, EM=False,
-                 bias=0):
-
+                 bias=0, bias_mean=0):
     N = S.shape[1] - bias
     D = calculate_D(S)
 
@@ -88,7 +86,8 @@ def do_inference(S, J, num_processes, samp_num, burnin, sigma_J, sparsity, dir_n
     inputs = [indices[i:i + N / num_processes] for i in range(0, len(indices), N / num_processes)]
     for input_indices in inputs:
         args_multi.append(
-                (samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin, save_all, EM, bias))
+                (samp_num, burnin, sigma_J, S, D, sparsity, input_indices, dir_name, thin, save_all, EM, bias,
+                 bias_mean))
     results = do_multiprocess(args_multi, num_processes)
 
     # i = 0
@@ -142,10 +141,15 @@ def EM(S, J, num_processes, samp_num, burnin, sigma_J, init_sparsity, dir_name, 
               default=False,
               help='If True performs EM to find the most likely sparsity.')
 @click.option('--bias',
-              default=0,
+              default=False,
+              type=click.BOOL,
               help='If True each neuron will have an internal bias.')
+@click.option('--bias_mean',
+              default=0,
+              type=click.FLOAT,
+              help='The mean value for the bias.')
 def main(num_neurons, time_steps, num_processes, sparsity, pprior,
-         activity_mat_file, num_trials, em, bias):
+         activity_mat_file, num_trials, em, bias, bias_mean):
     bias = int(bias)
     N = num_neurons
     T = time_steps
@@ -163,7 +167,7 @@ def main(num_neurons, time_steps, num_processes, sparsity, pprior,
     save_all = False
 
     if not activity_mat_file:
-        S, J = generate_J_S(bias, N, T, ro, sigma_J)
+        S, J = generate_J_S(bias, N, T, ro, sigma_J, bias_mean)
     else:
         with open(activity_mat_file) as f:
             res = pickle.load(f)
@@ -188,7 +192,7 @@ def main(num_neurons, time_steps, num_processes, sparsity, pprior,
             if not os.path.exists(dir_name_pprior):
                 os.makedirs(dir_name_pprior)
             do_inference(S[1:, :], J, num_processes, samp_num, burnin, sigma_J, pprior, dir_name, thin, save_all, em,
-                         bias)
+                         bias, bias_mean)
 
 
 if __name__ == "__main__":

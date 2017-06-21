@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import stats
 
+
 def exp_cosh(H, beta=1.0):
     return 0.5 * np.exp(beta * H) / np.cosh(beta * H)
 
@@ -24,7 +25,7 @@ def kinetic_ising_model(S, J):
     return p
 
 
-def spike_and_slab(ro, N, bias=0, v_s=1.0):
+def spike_and_slab(ro, N, bias=0, v_s=1.0, bias_mean=0):
     ''' This function generate spike and priors
 
     :param ro: sparsity
@@ -34,14 +35,16 @@ def spike_and_slab(ro, N, bias=0, v_s=1.0):
     '''
 
     gamma = stats.bernoulli.rvs(p=ro, size=(N, N + bias))
-    if bias:
-        gamma[:, N] = 1
     normal_dist = np.random.normal(0.0, v_s, (N, N + bias))
+
+    if bias:
+        gamma[N, :] = 1
+        normal_dist[N, :] = np.random.normal(bias_mean, v_s, N)
 
     return gamma * normal_dist
 
 
-def generate_spikes(N, T, S0, J, bias=0, no_spike=-1, save=False):
+def generate_spikes(N, T, S0, J, bias=False, bias_mean=0, no_spike=-1, save=False):
     """ Generates spike data according to kinetic Ising model
         with a spike and slab prior.
 
