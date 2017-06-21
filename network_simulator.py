@@ -38,8 +38,8 @@ def spike_and_slab(ro, N, bias=0, v_s=1.0, bias_mean=0):
     normal_dist = np.random.normal(0.0, v_s, (N, N + bias))
 
     if bias:
-        gamma[N, :] = 1
-        normal_dist[N, :] = np.random.normal(bias_mean, v_s, N)
+        gamma[:, N] = 1
+        normal_dist[:, N] = np.random.normal(bias_mean, v_s, N)
 
     return gamma * normal_dist
 
