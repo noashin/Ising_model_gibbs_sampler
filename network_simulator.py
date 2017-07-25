@@ -1,12 +1,13 @@
 import numpy as np
 from scipy import stats
+from scipy.special import expit
 
 
 def exp_cosh(H, beta=1.0):
-    return 0.5 * np.exp(beta * H) / np.cosh(beta * H)
+    return np.exp(beta * H) / (2. * np.cosh(beta * H))
 
 
-def kinetic_ising_model(S, J):
+def kinetic_ising_model(S, J, no_spike):
     """ Returns probabilities of S[t+1,:] being one.
 
     :param S: numpy.ndarray (T,N)
@@ -20,7 +21,10 @@ def kinetic_ising_model(S, J):
     # compute fields
     H = np.dot(S, J.T)
     # compute probabilities
-    p = exp_cosh(H)
+    if no_spike == 0:
+        p = expit(H)
+    else:
+        p = exp_cosh(H)
     # return
     return p
 
@@ -41,7 +45,10 @@ def spike_and_slab(ro, N, bias=0, v_s=1.0, bias_mean=0):
         gamma[:, N] = 1
         normal_dist[:, N] = np.random.normal(bias_mean, v_s, N)
 
-    return gamma * normal_dist
+    if ro > 0.99:
+        return normal_dist
+    else:
+        return gamma * normal_dist
 
 
 def generate_spikes(N, T, S0, J, bias=False, bias_mean=0, no_spike=-1, save=False):
@@ -74,11 +81,11 @@ def generate_spikes(N, T, S0, J, bias=False, bias_mean=0, no_spike=-1, save=Fals
     # Iterate through all time points
     for t in range(1, T):
         # Compute probabilities of neuron firing
-        p = kinetic_ising_model(np.array([S[t - 1]]), J)
+        p = kinetic_ising_model(np.array([S[t - 1]]), J, no_spike)
         # Check if spike or not
         if no_spike == -1:
-            S[t, :N] = 2 * (X[t - 1] < p) - 1
+            S[t, :N] = 1. * (2 * (X[t - 1] < p) - 1)
         else:
-            S[t, :N] = 2 * (X[t - 1] < p) / 2.0
+            S[t, :N] = 1. * (2 * (X[t - 1] < p) / 2.)
     S = S
     return S
