@@ -8,12 +8,11 @@ import numpy as np
 import pypolyagamma as pypolyagamma
 
 
-# fixme taking everything to 0 !!! :( even when gamma = 1
-
 def calculate_C_w(S, w_i):
-    w_mat = np.diag(w_i)
+    #w_mat = np.diag(w_i)
+    sw = w_i[:, np.newaxis] * S
 
-    return np.dot(S.T, np.dot(w_mat, S))
+    return np.dot(S.T, sw)
 
 
 def sample_w_i(S, J_i):
@@ -151,6 +150,8 @@ def sample_neuron_save_sufficient(samp_num, burnin, sigma_J, S, D_i, ro, thin, n
         N_s = samp_num + burnin
 
     J_i = np.random.normal(0, sigma_J, N)
+    if bias:
+        J_i[-1] = np.random.normal(bias_mean, sigma_J)
     res = np.zeros((2, 3, T))
     # import ipdb; ipdb.set_trace()
     for i in xrange(N_s):
